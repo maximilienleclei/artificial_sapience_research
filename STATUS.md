@@ -11,6 +11,8 @@
 - The user wants high-level, complete project direction while Codex handles implementation details under the hood.
 - The user does not want to read repo files; chat is the only expected user interface.
 - Repo docs are the durable memory for preferences, decisions, experiment results, constraints, artifacts, and next steps.
+- Experiments should remain rerunnable, usually by archiving experiment-specific codebases, but active work should not carry backwards-compatibility burden.
+- Before building a new experiment, Codex should consider whether a rewrite is cleaner than extending the current code.
 - Before future coding sessions, read this file and recent commits, then give a short orientation.
 
 ## Next Steps

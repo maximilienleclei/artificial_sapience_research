@@ -6,5 +6,7 @@
 4. The user does not want to read repo files. Communicate all user-facing state, decisions, and summaries through chat; repo docs are for agent continuity.
 5. After any meaningful change, update the handoff docs so a new agent can quickly understand current experiments, decisions, results, constraints, artifacts, and next steps.
 6. After any meaningful verified codebase or workflow change, stage and commit it by default unless the user explicitly says not to commit yet.
-7. Prioritize the active experiment over backwards compatibility.
-8. When optimizing experiments, report concrete throughput or outcome numbers rather than relying on epochs alone.
+7. Preserve experiments so they can be rerun, but do not burden active work with backwards compatibility.
+8. Before implementing a new experiment, decide whether it is cleaner to rewrite the codebase for that experiment and archive the previous codebase.
+9. Treat the repo as an evolving archive of experiment-specific codebases, with the current branch optimized for the active experiment.
+10. When optimizing experiments, report concrete throughput or outcome numbers rather than relying on epochs alone.
