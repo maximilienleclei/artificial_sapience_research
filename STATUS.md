@@ -13,7 +13,7 @@
 - The user does not want to read repo files; chat is the only expected user interface.
 - Repo docs are the durable memory for preferences, decisions, experiment results, constraints, artifacts, and next steps.
 - Experiments should remain rerunnable, usually by archiving experiment-specific codebases, but active work should not carry backwards-compatibility burden.
-- Archived experiments should use a graph/tree naming style with numbered folders like `XXX_expname`.
+- Archived experiments should use numbered folders like `XXX_expname`.
 - Before building a new experiment, Codex should consider whether a rewrite is cleaner than extending the current code.
 - The user may move between machines, currently including AMD Radeon RX 7800 XT and NVIDIA RTX 5070 Ti Laptop GPU systems, with more machines possible later.
 - Environment setup should be documented per machine; do not assume one GPU or Python stack is permanent.
