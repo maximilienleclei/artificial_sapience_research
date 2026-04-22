@@ -9,4 +9,5 @@
 7. Preserve experiments so they can be rerun, but do not burden active work with backwards compatibility.
 8. Before implementing a new experiment, decide whether it is cleaner to rewrite the codebase for that experiment and archive the previous codebase.
 9. Treat the repo as an evolving archive of experiment-specific codebases, with the current branch optimized for the active experiment.
-10. When optimizing experiments, report concrete throughput or outcome numbers rather than relying on epochs alone.
+10. Expect the user to work across multiple machines. Record machine-specific environment facts, but do not assume one GPU or Python stack is permanent.
+11. When optimizing experiments, report concrete throughput or outcome numbers rather than relying on epochs alone.
