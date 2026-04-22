@@ -2,4 +2,4 @@
 
 Fresh restart branch for artificial wisdom research.
 
-Rerunnable experiment archives live under `experiments/`.
+Rerunnable research units live under `units/`.
