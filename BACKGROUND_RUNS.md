@@ -27,6 +27,7 @@ For any background run:
    - main output paths
    - whether the run is `running`, `completed`, `stopped`, or `failed`
 5. Keep canonical unit artifacts unchanged until the run completes and is verified.
+6. Prefer absolute paths or explicitly unit-local paths for output arguments. Do not rely on ambiguous `..` path resolution in detached runs.
 
 ## Preferred Layout
 
@@ -59,3 +60,12 @@ Only after a background run finishes and the outputs are verified:
 - copy or rename the chosen artifacts into the unit's canonical `model/` and `plot/` locations
 - update the unit `STATUS.md`
 - then commit, if git state allows it
+
+## Validated Local Pattern
+
+On this Windows setup, the validated invisible background pattern is:
+
+- launch the detached worker with `pythonw.exe`
+- keep the actual experiment under `python.exe`
+- write progress to run-specific files
+- inspect progress by reading `run_status.json`, `stdout.log`, `stderr.log`, and run metrics files

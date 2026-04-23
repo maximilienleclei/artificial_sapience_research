@@ -25,3 +25,5 @@
 23. Background runs must never overwrite a unit's canonical result files while still in progress. Write intermediate outputs to a unique run-specific directory first, then only promote them to canonical artifacts after the run is complete and verified.
 24. Prefer one active background run at a time unless the user explicitly asks for parallel runs. When a background run exists, always check its status files before summarizing progress.
 25. Background runs must be easy to stop safely. Record enough information to terminate the specific run without guessing, and avoid ambiguous "latest output" conventions when multiple runs could exist.
+26. For detached runs, prefer absolute paths or explicitly unit-local paths for outputs. Do not rely on ambiguous `..` path resolution.
+27. On this Windows setup, prefer `pythonw.exe` for the detached launcher path when invisibility matters, while keeping the actual experiment under `python.exe` unless there is a reason not to.
