@@ -32,6 +32,7 @@
 - Strict time caps must apply from process launch, not from after Python startup or model loading. For bounded runs, use an OS-level kill wrapper in the command itself in addition to any internal deadline.
 - Background runs must remain invisible to the user; do not use execution patterns that pop open visible terminal windows or consoles.
 - Time-bounded runs are safety slices, not convergence claims. Convergence should be judged across repeated bounded slices from saved optimization curves, not inferred from a single timeout-limited run.
+- For time-budgeted runs, elapsed wall-clock time is the default stop contract. Do not treat target accuracy, plateau checks, solved thresholds, or fixed epoch counts as implicit early-stop rules unless the user explicitly asked for them.
 - When using background runs, keep them fully trackable with unique run names, run-specific output directories, and machine-readable status files. Do not overwrite canonical artifacts until the background run finishes and is verified.
 - On this Windows setup, the currently validated invisible launcher pattern uses `pythonw.exe` for the detached worker and explicit run-specific output paths.
 - The user may move between machines, currently including AMD Radeon RX 7800 XT and NVIDIA RTX 5070 Ti Laptop GPU systems, with more machines possible later.

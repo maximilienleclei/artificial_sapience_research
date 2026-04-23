@@ -27,3 +27,4 @@
 25. Background runs must be easy to stop safely. Record enough information to terminate the specific run without guessing, and avoid ambiguous "latest output" conventions when multiple runs could exist.
 26. For detached runs, prefer absolute paths or explicitly unit-local paths for outputs. Do not rely on ambiguous `..` path resolution.
 27. On this Windows setup, prefer `pythonw.exe` for the detached launcher path when invisibility matters, while keeping the actual experiment under `python.exe` unless there is a reason not to.
+28. For time-budgeted runs, the elapsed wall-clock budget is the only default stop condition. Do not add or rely on early stopping from target accuracy, plateau heuristics, solved thresholds, fixed epoch counts, or similar "good enough" criteria unless the user explicitly asks for them.

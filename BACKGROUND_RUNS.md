@@ -52,6 +52,7 @@ If both model and plot artifacts are produced, record both directories in `run_s
 - Every background run must have a predetermined stop deadline.
 - The run must be stoppable using the information recorded in `run_status.json`.
 - Do not rely on memory or "the latest python process" to stop a run.
+- For time-budgeted optimization runs, do not stop early because a metric looks good enough. By default, the run should continue working until the deadline or an external kill stops it, unless the user explicitly requested another stop rule.
 
 ## Promotion Rule
 
