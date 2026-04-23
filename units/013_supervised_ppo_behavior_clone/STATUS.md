@@ -18,6 +18,7 @@
 - The supervised clone should report both training and validation action accuracy before the closed-loop benchmark comparison.
 - As of April 23, 2026, the timed training loop no longer stops early on high validation accuracy; timed slices now run to the allotted wall-clock budget unless killed externally.
 - As of April 23, 2026, the unit writes inspectable progress snapshots during dataset, training, and evaluation stages instead of waiting until process exit.
+- As of April 23, 2026, the supervised optimizer uses `AdamW` with a linear-warmup cosine-decay learning-rate schedule instead of a fixed learning rate.
 
 ## Verification
 
@@ -47,6 +48,12 @@
 - Verification fix on April 23, 2026 confirmed the early-stop removal and unit-local path defaults:
   - a `20s` timed verification slice ran through the full allotted slice (`elapsed_s=20.004`)
   - verification result: train accuracy `0.9578`, validation accuracy `1.0000`, clone return mean `461.10`
+- Scheduler verification on April 23, 2026 confirmed the warmup+cosine path:
+  - `15s` timed verification slice with final LR about `1.5e-4`
+  - train accuracy `0.9961`
+  - validation accuracy `1.0000`
+  - closed-loop return mean `498.29`
+  - action-switch-rate mean delta vs PPO `0.0158`
 
 ## Artifacts
 

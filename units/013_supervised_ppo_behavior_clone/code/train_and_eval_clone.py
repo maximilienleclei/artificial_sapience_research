@@ -63,6 +63,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hidden-size", type=int, default=32)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=0.003)
+    parser.add_argument("--warmup-fraction", type=float, default=0.05)
+    parser.add_argument("--min-lr-scale", type=float, default=0.05)
     parser.add_argument("--val-fraction", type=float, default=0.2)
     parser.add_argument("--collect-fraction", type=float, default=0.45)
     parser.add_argument("--train-fraction", type=float, default=0.35)
@@ -115,6 +117,22 @@ def summarize_partial_history(history: list[dict]) -> dict:
 def write_progress_snapshot(metrics_path: Path, comparison_path: Path, payload: dict) -> None:
     write_json(metrics_path, payload)
     write_json(comparison_path, payload)
+
+
+def scheduled_lr_scale(progress: float, warmup_fraction: float, min_lr_scale: float) -> float:
+    clamped = min(max(progress, 0.0), 1.0)
+    if warmup_fraction > 0.0 and clamped < warmup_fraction:
+        return max(min_lr_scale, clamped / warmup_fraction)
+    if warmup_fraction >= 1.0:
+        return 1.0
+    cosine_progress = (clamped - warmup_fraction) / max(1e-8, 1.0 - warmup_fraction)
+    cosine_value = 0.5 * (1.0 + np.cos(np.pi * cosine_progress))
+    return min_lr_scale + (1.0 - min_lr_scale) * cosine_value
+
+
+def set_optimizer_lr(optimizer: torch.optim.Optimizer, lr: float) -> None:
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = lr
 
 
 def collect_training_data(
@@ -185,6 +203,8 @@ def train_clone(
     hidden_size: int,
     batch_size: int,
     lr: float,
+    warmup_fraction: float,
+    min_lr_scale: float,
     val_fraction: float,
     device: torch.device,
     train_start: float,
@@ -220,6 +240,9 @@ def train_clone(
         for batch_x, batch_y in train_loader:
             if time.perf_counter() >= deadline:
                 break
+            train_progress = (time.perf_counter() - train_start) / max(1e-8, deadline - train_start)
+            current_lr = lr * scheduled_lr_scale(train_progress, warmup_fraction, min_lr_scale)
+            set_optimizer_lr(optimizer, current_lr)
             batch_x = batch_x.to(device)
             batch_y = batch_y.to(device)
             optimizer.zero_grad(set_to_none=True)
@@ -242,6 +265,7 @@ def train_clone(
                 "train_accuracy": correct / total,
                 "val_loss": val_loss,
                 "val_accuracy": val_accuracy,
+                "lr": current_lr,
                 "elapsed_s": round(time.perf_counter() - train_start, 3),
             }
         )
@@ -260,6 +284,13 @@ def train_clone(
                 "val_examples": val_count,
                 "parameter_count": parameter_count(hidden_size),
                 "optimization_forward_example_evals": int(forward_example_evals),
+                "scheduler": {
+                    "type": "linear_warmup_cosine_decay",
+                    "base_lr": lr,
+                    "warmup_fraction": warmup_fraction,
+                    "min_lr_scale": min_lr_scale,
+                    "current_lr": current_lr,
+                },
                 "history_summary": summarize_partial_history(history),
                 "train_history": history,
             },
@@ -384,6 +415,12 @@ def main(args: argparse.Namespace) -> None:
             "dataset_steps": int(len(dataset_rows)),
             "train_episodes_collected": int(len({row["episode"] for row in dataset_rows})),
             "dataset_reused": bool(args.reuse_dataset and dataset_path.exists()),
+            "scheduler": {
+                "type": "linear_warmup_cosine_decay",
+                "base_lr": args.lr,
+                "warmup_fraction": args.warmup_fraction,
+                "min_lr_scale": args.min_lr_scale,
+            },
         },
     )
 
@@ -392,6 +429,8 @@ def main(args: argparse.Namespace) -> None:
         hidden_size=args.hidden_size,
         batch_size=args.batch_size,
         lr=args.lr,
+        warmup_fraction=args.warmup_fraction,
+        min_lr_scale=args.min_lr_scale,
         val_fraction=args.val_fraction,
         device=device,
         train_start=time.perf_counter(),
@@ -433,6 +472,13 @@ def main(args: argparse.Namespace) -> None:
                 "best_val_accuracy": float(best_val_accuracy),
                 "episodes_completed": int(len(episode_rows)),
                 "partial_return_mean": float(np.mean([row["return"] for row in episode_rows])),
+                "scheduler": {
+                    "type": "linear_warmup_cosine_decay",
+                    "base_lr": args.lr,
+                    "warmup_fraction": args.warmup_fraction,
+                    "min_lr_scale": args.min_lr_scale,
+                    "current_lr": float(train_history[-1]["lr"]),
+                },
                 "train_history": train_history,
             },
         )
@@ -453,6 +499,13 @@ def main(args: argparse.Namespace) -> None:
         "optimization_forward_example_evals": int(optimization_forward_example_evals),
         "optimization_forward_flops_estimate": int(optimization_forward_example_evals * forward_flops_per_example(args.hidden_size)),
         "dataset_reused": bool(args.reuse_dataset and dataset_path.exists()),
+        "scheduler": {
+            "type": "linear_warmup_cosine_decay",
+            "base_lr": args.lr,
+            "warmup_fraction": args.warmup_fraction,
+            "min_lr_scale": args.min_lr_scale,
+            "final_lr": float(train_history[-1]["lr"]),
+        },
         "train_accuracy": float(final_train_accuracy),
         "best_val_accuracy": float(best_val_accuracy),
         "elapsed_s": round(time.perf_counter() - start, 3),
