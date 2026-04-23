@@ -10,6 +10,7 @@
 - `008_torch_cartpole_physics_parity` verifies a Torch/GPU CartPole physics port against Gymnasium before using it for training; float64 matched at numerical precision and GPU float32 max drift was `8.405e-07` over valid rollout steps.
 - `009_cartpole_human_data_torch_engine_parity` found that the Unit 8 Torch CartPole engine reproduces Unit 4 human CartPole data closely enough to preserve final episode returns exactly across all recorded episodes, despite some long-horizon state drift.
 - `010_gpu_cartpole_score_mean500` is the current active experiment: under matched 8-second GPU-native CartPole score smoke runs, the static runner reached peak mean `410.79`, the dynamic runner reached peak mean `432.93`, and a tuned static variant reached `473.48`; next step is to push population mean to `500.00`.
+- `011_gpu_cartpole_adversarial_generation` is a minimal GPU-native CartPole adversarial-generation port using the Unit 3 PPO checkpoint as target; the verified static smoke run reached best mean total fitness `0.8964` and mean generator environment reward `63.56`.
 - Known machine environment: NVIDIA RTX 5070 Ti Laptop GPU with `C:\Users\Max\venv`, Python `3.14.3`, PyTorch `2.11.0+cu130`; CUDA reports one RTX 5070 Ti Laptop GPU.
 - Known machine environment: AMD Radeon RX 7800 XT with `C:\Users\Max\venv`, PyTorch `2.9.1+rocm7.2.1`; PyTorch reports `cuda=True`, HIP `7.2.53211-158bd99533`, and device name `AMD  Radeon RX 7800 XT`.
 
