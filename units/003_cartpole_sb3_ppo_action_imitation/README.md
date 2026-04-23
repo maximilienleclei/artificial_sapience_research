@@ -5,5 +5,5 @@ Static MLP genetic algorithm imitating a trained SB3 PPO CartPole checkpoint wit
 Run from this folder after installing `code/` into the active venv:
 
 ```powershell
-C:\Users\Max\venv\Scripts\python.exe -m awr.experiments.act_pred_sb3 --target-agent-path .\models\ppo-CartPole-v1.zip --target-agent-algo ppo --generations 100 --population-size 256
+C:\Users\Max\venv\Scripts\python.exe -m awr.experiments.act_pred_sb3 --target-agent-path .\model\ppo-CartPole-v1.zip --target-agent-algo ppo --generations 100 --population-size 256
 ```
