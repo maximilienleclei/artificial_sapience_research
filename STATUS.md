@@ -19,7 +19,7 @@
 - Archived research units should use numbered folders like `XXX_name`.
 - Units with plotted outputs should write those outputs under their own `plot/` folder; no-plot units should not create a `plot/` folder.
 - Before building a new experiment, Codex should consider whether a rewrite is cleaner than extending the current code.
-- Experiments should default to explicit wall-clock budgets; generations, epochs, iterations, and steps are secondary caps or reported outcomes.
+- Experiments should default to explicit wall-clock budgets; generations, epochs, iterations, and steps are secondary caps or reported outcomes. Enforce budgets with both internal deadlines and external hard process timeouts, and flush artifacts incrementally.
 - The user may move between machines, currently including AMD Radeon RX 7800 XT and NVIDIA RTX 5070 Ti Laptop GPU systems, with more machines possible later.
 - Environment setup should be documented per machine; do not assume one GPU or Python stack is permanent.
 - Before future coding sessions, read this file and recent commits, then give a short orientation.
