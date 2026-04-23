@@ -17,6 +17,7 @@
 - This is the baseline that the upcoming GA behavior-matching unit should beat on the same closed-loop benchmark.
 - The supervised clone should report both training and validation action accuracy before the closed-loop benchmark comparison.
 - As of April 23, 2026, the timed training loop no longer stops early on high validation accuracy; timed slices now run to the allotted wall-clock budget unless killed externally.
+- As of April 23, 2026, the unit writes inspectable progress snapshots during dataset, training, and evaluation stages instead of waiting until process exit.
 
 ## Verification
 

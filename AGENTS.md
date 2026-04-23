@@ -28,4 +28,4 @@
 26. For detached runs, prefer absolute paths or explicitly unit-local paths for outputs. Do not rely on ambiguous `..` path resolution.
 27. On this Windows setup, prefer `pythonw.exe` for the detached launcher path when invisibility matters, while keeping the actual experiment under `python.exe` unless there is a reason not to.
 28. For time-budgeted runs, the elapsed wall-clock budget is the only default stop condition. Do not add or rely on early stopping from target accuracy, plateau heuristics, solved thresholds, fixed epoch counts, or similar "good enough" criteria unless the user explicitly asks for them.
-29. Do not withhold inspectable run information during long or background work. Long-running experiments should flush useful progress artifacts incrementally so status, curves, and partial results can be inspected while the run is still in flight.
+29. Do not withhold inspectable run information. Any meaningful run, analysis, or workflow that produces progress over time should expose useful intermediate state instead of hiding everything until exit.

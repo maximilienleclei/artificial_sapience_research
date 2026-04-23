@@ -93,6 +93,30 @@ def write_csv(path: Path, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
+def write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def summarize_partial_history(history: list[dict]) -> dict:
+    if not history:
+        return {"epochs_completed": 0}
+    return {
+        "epochs_completed": int(len(history)),
+        "latest_train_loss": float(history[-1]["train_loss"]),
+        "latest_train_accuracy": float(history[-1]["train_accuracy"]),
+        "latest_val_loss": float(history[-1]["val_loss"]),
+        "latest_val_accuracy": float(history[-1]["val_accuracy"]),
+        "best_val_accuracy": float(max(row["val_accuracy"] for row in history)),
+        "elapsed_s": float(history[-1]["elapsed_s"]),
+    }
+
+
+def write_progress_snapshot(metrics_path: Path, comparison_path: Path, payload: dict) -> None:
+    write_json(metrics_path, payload)
+    write_json(comparison_path, payload)
+
+
 def collect_training_data(
     model: PPO,
     train_episodes: int,
@@ -165,6 +189,9 @@ def train_clone(
     device: torch.device,
     train_start: float,
     deadline: float,
+    metrics_path: Path,
+    comparison_path: Path,
+    model_path: Path,
 ) -> tuple[ClonePolicy, list[dict], float, float, int, int, int]:
     x = torch.tensor([[r["x"], r["x_dot"], r["theta"], r["theta_dot"]] for r in train_rows], dtype=torch.float32)
     y = torch.tensor([r["action"] for r in train_rows], dtype=torch.int64)
@@ -221,6 +248,22 @@ def train_clone(
         if val_accuracy >= best_val_accuracy:
             best_val_accuracy = val_accuracy
             best_state = {k: v.detach().cpu().clone() for k, v in policy.state_dict().items()}
+            model_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(best_state, model_path)
+        write_progress_snapshot(
+            metrics_path,
+            comparison_path,
+            {
+                "stage": "training",
+                "elapsed_s": round(time.perf_counter() - train_start, 3),
+                "train_examples": train_count,
+                "val_examples": val_count,
+                "parameter_count": parameter_count(hidden_size),
+                "optimization_forward_example_evals": int(forward_example_evals),
+                "history_summary": summarize_partial_history(history),
+                "train_history": history,
+            },
+        )
     if best_state is not None:
         policy.load_state_dict(best_state)
     final_train_accuracy = history[-1]["train_accuracy"] if history else 0.0
@@ -314,6 +357,9 @@ def main(args: argparse.Namespace) -> None:
     collect_deadline = start + args.time_budget_s * args.collect_fraction
     train_deadline = min(total_deadline, collect_deadline + args.time_budget_s * args.train_fraction)
     dataset_path = Path(args.dataset_path)
+    metrics_path = Path(args.metrics_path)
+    comparison_path = Path(args.comparison_path)
+    model_path = Path(args.model_path)
     if args.reuse_dataset and dataset_path.exists():
         dataset_rows = pd.read_csv(dataset_path).to_dict("records")
     else:
@@ -329,6 +375,17 @@ def main(args: argparse.Namespace) -> None:
         if not dataset_rows:
             raise RuntimeError("Time budget expired before collecting clone training data.")
         write_csv(dataset_path, dataset_rows)
+    write_progress_snapshot(
+        metrics_path,
+        comparison_path,
+        {
+            "stage": "dataset_ready",
+            "elapsed_s": round(time.perf_counter() - start, 3),
+            "dataset_steps": int(len(dataset_rows)),
+            "train_episodes_collected": int(len({row["episode"] for row in dataset_rows})),
+            "dataset_reused": bool(args.reuse_dataset and dataset_path.exists()),
+        },
+    )
 
     policy, train_history, final_train_accuracy, best_val_accuracy, train_count, val_count, optimization_forward_example_evals = train_clone(
         train_rows=dataset_rows,
@@ -339,19 +396,46 @@ def main(args: argparse.Namespace) -> None:
         device=device,
         train_start=time.perf_counter(),
         deadline=train_deadline,
+        metrics_path=metrics_path,
+        comparison_path=comparison_path,
+        model_path=model_path,
     )
     if not train_history:
         raise RuntimeError("Time budget expired before clone training completed one epoch.")
 
     eval_episode_df = pd.read_csv(args.eval_episodes_path)
     eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
-    rollout_rows, episode_rows = evaluate_clone(
-        policy=policy,
-        eval_seeds=eval_seeds,
-        max_steps=args.max_steps,
-        device=device,
-        deadline=total_deadline,
-    )
+    rollout_rows = []
+    episode_rows = []
+    for seed in eval_seeds:
+        partial_rollouts, partial_episodes = evaluate_clone(
+            policy=policy,
+            eval_seeds=[seed],
+            max_steps=args.max_steps,
+            device=device,
+            deadline=total_deadline,
+        )
+        if not partial_episodes:
+            break
+        rollout_rows.extend(partial_rollouts)
+        episode_rows.extend(partial_episodes)
+        write_csv(Path(args.episode_metrics_path), episode_rows)
+        write_progress_snapshot(
+            metrics_path,
+            comparison_path,
+            {
+                "stage": "evaluation",
+                "elapsed_s": round(time.perf_counter() - start, 3),
+                "dataset_steps": len(dataset_rows),
+                "train_examples": train_count,
+                "val_examples": val_count,
+                "train_accuracy": float(final_train_accuracy),
+                "best_val_accuracy": float(best_val_accuracy),
+                "episodes_completed": int(len(episode_rows)),
+                "partial_return_mean": float(np.mean([row["return"] for row in episode_rows])),
+                "train_history": train_history,
+            },
+        )
     if not episode_rows:
         raise RuntimeError("Time budget expired before clone evaluation completed one episode.")
 
@@ -391,11 +475,9 @@ def main(args: argparse.Namespace) -> None:
         },
         "train_history": train_history,
     }
-    Path(args.metrics_path).parent.mkdir(parents=True, exist_ok=True)
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(policy.state_dict(), args.model_path)
-    Path(args.metrics_path).write_text(json.dumps(comparison, indent=2) + "\n")
-    Path(args.comparison_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.comparison_path).write_text(json.dumps(comparison, indent=2) + "\n")
+    write_progress_snapshot(metrics_path, comparison_path, comparison)
     print(
         "dataset_steps={dataset_steps} train_acc={train_accuracy:.4f} clone_return_mean={clone_return:.2f} "
         "val_acc={val_accuracy:.4f} return_delta={return_delta:.2f} switch_delta={switch_delta:.4f}".format(

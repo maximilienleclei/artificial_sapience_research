@@ -16,6 +16,7 @@
 - This unit intentionally keeps the task narrow: action fitting first, closed-loop benchmark second.
 - It is meant to answer whether a small GA can beat Unit 13 on the same benchmark without changing the target definition.
 - As of April 23, 2026, the script uses unit-local default output paths and absolute cross-unit benchmark/dataset defaults so detached/background runs do not fail from relative path resolution.
+- As of April 23, 2026, the unit also writes inspectable progress snapshots during training and evaluation instead of waiting until process exit for metrics JSON.
 
 ## Verification
 

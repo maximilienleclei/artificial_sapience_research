@@ -16,6 +16,7 @@
 - `014_ga_ppo_action_clone` is the GA counterpart to Unit 13; an initial smoke run reached best validation action accuracy `0.9846` and `500.0` mean closed-loop return over `7` completed benchmark seeds while still differing from PPO on action-switch rate.
 - A fairer same-dataset rerun now exists for Units 13 and 14: both used the same frozen PPO dataset and the same `6s` optimization cap. Under that setup, Unit 13 reached `0.9974` validation accuracy and `490.0` mean closed-loop return over `2` completed benchmark seeds, while Unit 14 reached `0.9820` validation accuracy and `500.0` mean closed-loop return over `6` completed benchmark seeds. The GA consumed far more forward evaluations, so wall-clock fairness currently favors outcome comparison more than FLOP fairness.
 - Units 13 and 14 were repaired on April 23, 2026 for proper convergence slices: Unit 13 no longer stops early on high validation accuracy, and both units now use robust unit-local / absolute default paths that survive detached background launches.
+- Units 13 and 14 now also flush inspectable progress snapshots mid-run, so convergence/status checks no longer have to wait for process exit to see useful state.
 - Known machine environment: NVIDIA RTX 5070 Ti Laptop GPU with `C:\Users\Max\venv`, Python `3.14.3`, PyTorch `2.11.0+cu130`; CUDA reports one RTX 5070 Ti Laptop GPU.
 - Known machine environment: AMD Radeon RX 7800 XT with `C:\Users\Max\venv`, PyTorch `2.9.1+rocm7.2.1`; PyTorch reports `cuda=True`, HIP `7.2.53211-158bd99533`, and device name `AMD  Radeon RX 7800 XT`.
 
@@ -34,7 +35,7 @@
 - Background runs must remain invisible to the user; do not use execution patterns that pop open visible terminal windows or consoles.
 - Time-bounded runs are safety slices, not convergence claims. Convergence should be judged across repeated bounded slices from saved optimization curves, not inferred from a single timeout-limited run.
 - For time-budgeted runs, elapsed wall-clock time is the default stop contract. Do not treat target accuracy, plateau checks, solved thresholds, or fixed epoch counts as implicit early-stop rules unless the user explicitly asked for them.
-- Long and background runs should never hide the useful state until exit; they should flush inspectable progress artifacts during execution so status and convergence can be checked mid-run.
+- Useful state should not be hidden until exit. Runs and analyses that progress over time should flush inspectable progress artifacts during execution so status and convergence can be checked mid-run.
 - When using background runs, keep them fully trackable with unique run names, run-specific output directories, and machine-readable status files. Do not overwrite canonical artifacts until the background run finishes and is verified.
 - On this Windows setup, the currently validated invisible launcher pattern uses `pythonw.exe` for the detached worker and explicit run-specific output paths.
 - The user may move between machines, currently including AMD Radeon RX 7800 XT and NVIDIA RTX 5070 Ti Laptop GPU systems, with more machines possible later.

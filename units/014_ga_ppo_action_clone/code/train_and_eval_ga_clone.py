@@ -176,6 +176,16 @@ def write_csv(path: Path, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
+def write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def write_progress_snapshot(metrics_path: Path, comparison_path: Path, payload: dict) -> None:
+    write_json(metrics_path, payload)
+    write_json(comparison_path, payload)
+
+
 def load_dataset(dataset_path: str, val_fraction: float, device: torch.device) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     df = pd.read_csv(dataset_path)
     obs = torch.tensor(df[["x", "x_dot", "theta", "theta_dot"]].to_numpy(), dtype=torch.float32, device=device)
@@ -228,6 +238,8 @@ def main(args: argparse.Namespace) -> None:
     start = time.perf_counter()
     deadline = start + args.time_budget_s
     fit_deadline = start + args.time_budget_s * args.train_fraction
+    metrics_path = Path(args.metrics_path)
+    comparison_path = Path(args.comparison_path)
 
     population = StaticPopulation.random(args.population_size, args.hidden_size, device, args.seed)
     history: list[dict] = []
@@ -263,6 +275,20 @@ def main(args: argparse.Namespace) -> None:
             best_json = population.best_json(idx0, float(elite_fit[0].item()))
             Path(args.best_path).parent.mkdir(parents=True, exist_ok=True)
             Path(args.best_path).write_text(json.dumps(best_json, indent=2) + "\n")
+        write_progress_snapshot(
+            metrics_path,
+            comparison_path,
+            {
+                "stage": "training",
+                "elapsed_s": round(time.perf_counter() - start, 3),
+                "train_examples": int(train_x.shape[0]),
+                "val_examples": int(val_x.shape[0]),
+                "parameter_count": parameter_count(args.hidden_size),
+                "optimization_forward_example_evals": int(optimization_forward_example_evals),
+                "best_val_accuracy": float(best_val_accuracy),
+                "history": history,
+            },
+        )
         if time.perf_counter() >= fit_deadline:
             break
         population = population.reproduce(elite_idx, args.mutation_std, args.seed + generation + 1)
@@ -287,6 +313,23 @@ def main(args: argparse.Namespace) -> None:
                 "action_one_rate": action_one_rate,
                 "action_switch_rate": switch_rate,
             }
+        )
+        write_csv(Path(args.episode_metrics_path), episode_rows)
+        write_progress_snapshot(
+            metrics_path,
+            comparison_path,
+            {
+                "stage": "evaluation",
+                "elapsed_s": round(time.perf_counter() - start, 3),
+                "train_examples": int(train_x.shape[0]),
+                "val_examples": int(val_x.shape[0]),
+                "parameter_count": parameter_count(args.hidden_size),
+                "optimization_forward_example_evals": int(optimization_forward_example_evals),
+                "best_val_accuracy": float(best_val_accuracy),
+                "episodes_completed": int(len(episode_rows)),
+                "partial_return_mean": float(np.mean([row["return"] for row in episode_rows])),
+                "history": history,
+            },
         )
     if not episode_rows:
         raise RuntimeError("Time budget expired before GA clone evaluation completed one episode.")
@@ -334,10 +377,7 @@ def main(args: argparse.Namespace) -> None:
         },
         "history": history,
     }
-    Path(args.metrics_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.metrics_path).write_text(json.dumps(comparison, indent=2) + "\n")
-    Path(args.comparison_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.comparison_path).write_text(json.dumps(comparison, indent=2) + "\n")
+    write_progress_snapshot(metrics_path, comparison_path, comparison)
     print(
         "best_val_acc={val_acc:.4f} clone_return_mean={clone_return:.2f} return_delta={return_delta:.2f} switch_delta={switch_delta:.4f}".format(
             val_acc=comparison["best_val_accuracy"],
