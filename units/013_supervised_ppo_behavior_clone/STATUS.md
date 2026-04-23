@@ -33,6 +33,15 @@
     - return mean `31.0`
     - action=`1` mean rate `0.00041`
     - action-switch-rate mean `0.0425`
+- Fairer optimizer-only rerun on April 23, 2026 reused the saved PPO dataset from this unit instead of recollecting data:
+  - same train/val examples `1557 / 389`
+  - parameter count `1282`
+  - optimization forward-example evals `332,766`
+  - estimated optimization forward FLOPs `809,286,912`
+  - best validation accuracy `0.9974`
+  - closed-loop benchmark completed `2` Unit 12 seeds within the same `6s` total cap
+  - clone return mean/std `490.0 / 10.0`
+  - action-switch-rate mean delta vs PPO `0.0454`
 
 ## Artifacts
 
@@ -45,5 +54,5 @@
 
 ## Next Steps
 
-- Increase the supervised data budget and benchmark completion count to get a more stable baseline.
-- Compare this baseline against GA behavior-matching on the same Unit 12 seeds and metrics.
+- Increase benchmark completion count under a split budget so optimization fairness and evaluation coverage can both be reported cleanly.
+- Compare this baseline against Unit 14 as the fair same-dataset optimizer comparison.

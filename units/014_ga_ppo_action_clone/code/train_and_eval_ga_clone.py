@@ -126,6 +126,14 @@ class StaticPopulation:
         )
 
 
+def parameter_count(hidden_size: int) -> int:
+    return (4 * hidden_size + hidden_size) + (hidden_size * hidden_size + hidden_size) + (hidden_size * 2 + 2)
+
+
+def forward_flops_per_example(hidden_size: int) -> int:
+    return 2 * ((4 * hidden_size) + (hidden_size * hidden_size) + (hidden_size * 2))
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
@@ -225,13 +233,16 @@ def main(args: argparse.Namespace) -> None:
     best_population = population
     best_index = 0
     best_val_accuracy = 0.0
+    optimization_forward_example_evals = 0
 
     while time.perf_counter() < fit_deadline:
         fitness = fitness_on_dataset(population, train_x, train_y)
+        optimization_forward_example_evals += int(population.population_size * train_x.shape[0])
         elite_fit, elite_idx = torch.topk(fitness, k=args.elite_count, largest=True, sorted=True)
         idx0 = int(elite_idx[0].item())
         train_accuracy = accuracy_for_genome(population, train_x, train_y, idx0)
         val_accuracy = accuracy_for_genome(population, val_x, val_y, idx0)
+        optimization_forward_example_evals += int(train_x.shape[0] + val_x.shape[0])
         row = {
             "generation": generation,
             "best_fitness": round(float(elite_fit[0].item()), 6),
@@ -285,6 +296,9 @@ def main(args: argparse.Namespace) -> None:
         "time_budget_s": args.time_budget_s,
         "train_examples": int(train_x.shape[0]),
         "val_examples": int(val_x.shape[0]),
+        "parameter_count": parameter_count(args.hidden_size),
+        "optimization_forward_example_evals": int(optimization_forward_example_evals),
+        "optimization_forward_flops_estimate": int(optimization_forward_example_evals * forward_flops_per_example(args.hidden_size)),
         "best_train_accuracy": float(history[-1]["train_accuracy"]),
         "best_val_accuracy": float(best_val_accuracy),
         "elapsed_s": round(time.perf_counter() - start, 3),

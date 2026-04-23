@@ -36,10 +36,19 @@ class ClonePolicy(nn.Module):
         return self.net(x)
 
 
+def parameter_count(hidden_size: int) -> int:
+    return (4 * hidden_size + hidden_size) + (hidden_size * hidden_size + hidden_size) + (hidden_size * 2 + 2)
+
+
+def forward_flops_per_example(hidden_size: int) -> int:
+    return 2 * ((4 * hidden_size) + (hidden_size * hidden_size) + (hidden_size * 2))
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--time-budget-s", type=float, default=6.0)
+    parser.add_argument("--reuse-dataset", action="store_true")
     parser.add_argument("--train-episodes", type=int, default=32)
     parser.add_argument("--train-base-seed", type=int, default=2000)
     parser.add_argument("--max-steps", type=int, default=500)
@@ -156,7 +165,7 @@ def train_clone(
     device: torch.device,
     train_start: float,
     deadline: float,
-) -> tuple[ClonePolicy, list[dict], float, float, int, int]:
+) -> tuple[ClonePolicy, list[dict], float, float, int, int, int]:
     x = torch.tensor([[r["x"], r["x_dot"], r["theta"], r["theta_dot"]] for r in train_rows], dtype=torch.float32)
     y = torch.tensor([r["action"] for r in train_rows], dtype=torch.int64)
     total_count = int(y.shape[0])
@@ -174,6 +183,7 @@ def train_clone(
     history: list[dict] = []
     best_state = None
     best_val_accuracy = -1.0
+    forward_example_evals = 0
 
     while time.perf_counter() < deadline:
         epoch_loss = 0.0
@@ -193,9 +203,11 @@ def train_clone(
             epoch_loss += float(loss.item()) * int(batch_y.numel())
             correct += int((logits.argmax(dim=1) == batch_y).sum().item())
             total += int(batch_y.numel())
+            forward_example_evals += int(batch_y.numel())
         if total == 0:
             break
         val_accuracy, val_loss = evaluate_loader(policy, val_loader, device, loss_fn)
+        forward_example_evals += val_count
         history.append(
             {
                 "epoch": len(history) + 1,
@@ -214,7 +226,7 @@ def train_clone(
     if best_state is not None:
         policy.load_state_dict(best_state)
     final_train_accuracy = history[-1]["train_accuracy"] if history else 0.0
-    return policy, history, final_train_accuracy, max(best_val_accuracy, 0.0), train_count, val_count
+    return policy, history, final_train_accuracy, max(best_val_accuracy, 0.0), train_count, val_count, forward_example_evals
 
 
 @torch.no_grad()
@@ -303,20 +315,24 @@ def main(args: argparse.Namespace) -> None:
     total_deadline = start + args.time_budget_s
     collect_deadline = start + args.time_budget_s * args.collect_fraction
     train_deadline = min(total_deadline, collect_deadline + args.time_budget_s * args.train_fraction)
-    ppo = PPO.load(args.target_agent_path, device="cpu")
-    dataset_rows = collect_training_data(
-        model=ppo,
-        train_episodes=args.train_episodes,
-        train_base_seed=args.train_base_seed,
-        max_steps=args.max_steps,
-        device=device,
-        deadline=collect_deadline,
-    )
-    if not dataset_rows:
-        raise RuntimeError("Time budget expired before collecting clone training data.")
-    write_csv(Path(args.dataset_path), dataset_rows)
+    dataset_path = Path(args.dataset_path)
+    if args.reuse_dataset and dataset_path.exists():
+        dataset_rows = pd.read_csv(dataset_path).to_dict("records")
+    else:
+        ppo = PPO.load(args.target_agent_path, device="cpu")
+        dataset_rows = collect_training_data(
+            model=ppo,
+            train_episodes=args.train_episodes,
+            train_base_seed=args.train_base_seed,
+            max_steps=args.max_steps,
+            device=device,
+            deadline=collect_deadline,
+        )
+        if not dataset_rows:
+            raise RuntimeError("Time budget expired before collecting clone training data.")
+        write_csv(dataset_path, dataset_rows)
 
-    policy, train_history, final_train_accuracy, best_val_accuracy, train_count, val_count = train_clone(
+    policy, train_history, final_train_accuracy, best_val_accuracy, train_count, val_count, optimization_forward_example_evals = train_clone(
         train_rows=dataset_rows,
         hidden_size=args.hidden_size,
         batch_size=args.batch_size,
@@ -351,6 +367,10 @@ def main(args: argparse.Namespace) -> None:
         "train_episodes_collected": len({row["episode"] for row in dataset_rows}),
         "train_examples": train_count,
         "val_examples": val_count,
+        "parameter_count": parameter_count(args.hidden_size),
+        "optimization_forward_example_evals": int(optimization_forward_example_evals),
+        "optimization_forward_flops_estimate": int(optimization_forward_example_evals * forward_flops_per_example(args.hidden_size)),
+        "dataset_reused": bool(args.reuse_dataset and dataset_path.exists()),
         "train_accuracy": float(final_train_accuracy),
         "best_val_accuracy": float(best_val_accuracy),
         "elapsed_s": round(time.perf_counter() - start, 3),

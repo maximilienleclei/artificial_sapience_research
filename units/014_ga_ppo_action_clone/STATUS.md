@@ -31,6 +31,15 @@
     - return mean `0.0`
     - action=`1` mean rate `0.0`
     - action-switch-rate mean `0.0449`
+- Fairer same-dataset rerun on April 23, 2026 kept the same Unit 13 PPO dataset and the same `6s` optimizer budget:
+  - same train/val examples `1557 / 389`
+  - parameter count `1282`
+  - optimization forward-example evals `73,147,680`
+  - estimated optimization forward FLOPs `177,895,157,760`
+  - best validation accuracy `0.9820`
+  - closed-loop benchmark completed `6` Unit 12 seeds
+  - clone return mean/std `500.0 / 0.0`
+  - action-switch-rate mean delta vs PPO `0.0484`
 
 ## Artifacts
 
@@ -44,4 +53,4 @@
 ## Next Steps
 
 - Rerun Unit 14 with a larger time budget so it covers the full Unit 12 benchmark seed set.
-- Compare Unit 14 directly against Unit 13 on matched benchmark coverage.
+- Keep using the same frozen dataset when comparing against Unit 13 so the optimizer difference stays isolated.

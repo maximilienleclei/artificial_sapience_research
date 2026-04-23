@@ -14,6 +14,7 @@
 - `012_ppo_behavior_benchmark` freezes the PPO reference behavior for future imitation comparisons; the saved bounded snapshot completed `13` fixed-seed episodes in about `8s`, all with return `500.0`, and recorded rollout/action statistics for later metric deltas.
 - `013_supervised_ppo_behavior_clone` is the first plain behavior-cloning baseline; an initial smoke run reached best validation action accuracy `0.9769` but only `469.0` mean closed-loop return over `3` completed benchmark seeds, already showing a gap between action fit and rollout behavior.
 - `014_ga_ppo_action_clone` is the GA counterpart to Unit 13; an initial smoke run reached best validation action accuracy `0.9846` and `500.0` mean closed-loop return over `7` completed benchmark seeds while still differing from PPO on action-switch rate.
+- A fairer same-dataset rerun now exists for Units 13 and 14: both used the same frozen PPO dataset and the same `6s` optimization cap. Under that setup, Unit 13 reached `0.9974` validation accuracy and `490.0` mean closed-loop return over `2` completed benchmark seeds, while Unit 14 reached `0.9820` validation accuracy and `500.0` mean closed-loop return over `6` completed benchmark seeds. The GA consumed far more forward evaluations, so wall-clock fairness currently favors outcome comparison more than FLOP fairness.
 - Known machine environment: NVIDIA RTX 5070 Ti Laptop GPU with `C:\Users\Max\venv`, Python `3.14.3`, PyTorch `2.11.0+cu130`; CUDA reports one RTX 5070 Ti Laptop GPU.
 - Known machine environment: AMD Radeon RX 7800 XT with `C:\Users\Max\venv`, PyTorch `2.9.1+rocm7.2.1`; PyTorch reports `cuda=True`, HIP `7.2.53211-158bd99533`, and device name `AMD  Radeon RX 7800 XT`.
 
@@ -30,6 +31,8 @@
 - Every shell/tool execution should use an explicit finite timeout by default; anything beyond a brief read/listing needs a hard kill path.
 - Strict time caps must apply from process launch, not from after Python startup or model loading. For bounded runs, use an OS-level kill wrapper in the command itself in addition to any internal deadline.
 - Background runs must remain invisible to the user; do not use execution patterns that pop open visible terminal windows or consoles.
+- Time-bounded runs are safety slices, not convergence claims. Convergence should be judged across repeated bounded slices from saved optimization curves, not inferred from a single timeout-limited run.
+- When using background runs, keep them fully trackable with unique run names, run-specific output directories, and machine-readable status files. Do not overwrite canonical artifacts until the background run finishes and is verified.
 - The user may move between machines, currently including AMD Radeon RX 7800 XT and NVIDIA RTX 5070 Ti Laptop GPU systems, with more machines possible later.
 - Environment setup should be documented per machine; do not assume one GPU or Python stack is permanent.
 - Before future coding sessions, read this file and recent commits, then give a short orientation.
@@ -39,4 +42,7 @@
 - Use Unit 12 as the reference benchmark for the next PPO behavior-matching units.
 - Use Unit 13 as the supervised baseline that future GA behavior-matching runs should try to beat.
 - Expand Unit 14 to full benchmark coverage and then compare it directly against Unit 13 as the first practical test of the hypothesis.
+- Separate optimization budget from evaluation budget in the next comparison pass so benchmark coverage is matched cleanly while keeping the same frozen dataset.
+- For convergence studies, continue optimization in repeated bounded slices and decide convergence from the saved curves rather than from one slice length.
+- If background runs are used for convergence studies, keep them one-at-a-time by default and promote outputs to canonical unit artifacts only after the run is complete and checked.
 - Keep per-machine GPU/Python setup notes current as machines are used.
