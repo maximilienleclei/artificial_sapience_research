@@ -46,6 +46,7 @@ If both model and plot artifacts are produced, record both directories in `run_s
 - Append metrics incrementally inside the run-specific directory.
 - Status checks should read the run status file and the latest metrics file, not guess from timestamps alone.
 - If there is an active background run, check it before starting another one unless the user explicitly wants parallel runs.
+- Do not defer all useful metrics until process exit. Runs should expose enough in-flight information that we can answer "how is it going?" without waiting for the slice to finish.
 
 ## Stop Rules
 
