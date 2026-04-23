@@ -13,6 +13,9 @@
 ## Verification
 
 - Imported from `../ai_research/data/human_behaviour_control_tasks` on April 22, 2026.
+- Plot regeneration verified on April 23, 2026 using `C:\Users\Max\venv\Scripts\python.exe` from the `data/` directory with `MPLBACKEND=Agg`.
+- The script reported 79,581 total recorded steps across 8 participant/task files and regenerated `plot/training_sessions_plot.png`.
+- The default `python` on this machine does not have `matplotlib`; use the documented venv or install plotting dependencies before rerunning.
 - Not yet rerun or adapted to the current active codebase.
 
 ## Next Steps
