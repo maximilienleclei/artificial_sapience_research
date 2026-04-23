@@ -30,6 +30,7 @@ class StaticPopulation:
         b2: torch.Tensor,
         w3: torch.Tensor,
         b3: torch.Tensor,
+        mutation_std: torch.Tensor,
         device: torch.device,
     ) -> None:
         self.w1 = w1
@@ -38,6 +39,7 @@ class StaticPopulation:
         self.b2 = b2
         self.w3 = w3
         self.b3 = b3
+        self.mutation_std = mutation_std
         self.device = device
 
     @classmethod
@@ -53,6 +55,7 @@ class StaticPopulation:
             torch.randn(pop, 1, hidden, generator=g, device=device, dtype=dtype) * scale,
             torch.randn(pop, hidden, 2, generator=g, device=device, dtype=dtype) * scale,
             torch.randn(pop, 1, 2, generator=g, device=device, dtype=dtype) * scale,
+            torch.full((pop,), 0.03, device=device, dtype=dtype),
             device,
         )
 
@@ -74,31 +77,32 @@ class StaticPopulation:
             self.b2[idx].clone(),
             self.w3[idx].clone(),
             self.b3[idx].clone(),
+            self.mutation_std[idx].clone(),
             self.device,
         )
 
-    def reproduce(self, elite_idx: torch.Tensor, mutation_std: float, seed: int) -> "StaticPopulation":
-        elites = self.select(elite_idx)
-        elite_count = int(elite_idx.shape[0])
-        if elite_count == self.population_size:
-            return elites
+    def reproduce(self, parent_idx: torch.Tensor, mutation_scale_std: float, seed: int) -> "StaticPopulation":
         g = torch.Generator(device=self.device)
         g.manual_seed(seed)
-        child_count = self.population_size - elite_count
-        parent = torch.randint(0, elite_count, (child_count,), generator=g, device=self.device)
+        parents = self.select(parent_idx)
+        log_std = torch.log(torch.clamp(parents.mutation_std, min=1e-4))
+        log_std = log_std + torch.randn(log_std.shape, generator=g, device=self.device) * mutation_scale_std
+        child_std = torch.clamp(torch.exp(log_std), min=1e-4, max=1.0)
 
         def mutate(x: torch.Tensor) -> torch.Tensor:
-            child = x[parent].clone()
-            child += torch.randn(child.shape, generator=g, device=self.device) * mutation_std
+            child = x.clone()
+            std = child_std.view(-1, *([1] * (child.dim() - 1)))
+            child += torch.randn(child.shape, generator=g, device=self.device) * std
             return child
 
         return StaticPopulation(
-            torch.cat([elites.w1, mutate(elites.w1)], dim=0),
-            torch.cat([elites.b1, mutate(elites.b1)], dim=0),
-            torch.cat([elites.w2, mutate(elites.w2)], dim=0),
-            torch.cat([elites.b2, mutate(elites.b2)], dim=0),
-            torch.cat([elites.w3, mutate(elites.w3)], dim=0),
-            torch.cat([elites.b3, mutate(elites.b3)], dim=0),
+            mutate(parents.w1),
+            mutate(parents.b1),
+            mutate(parents.w2),
+            mutate(parents.b2),
+            mutate(parents.w3),
+            mutate(parents.b3),
+            child_std,
             self.device,
         )
 
@@ -111,6 +115,7 @@ class StaticPopulation:
             "b2": self.b2[index].detach().cpu().tolist(),
             "w3": self.w3[index].detach().cpu().tolist(),
             "b3": self.b3[index].detach().cpu().tolist(),
+            "mutation_std": float(self.mutation_std[index].detach().cpu().item()),
         }
 
     @classmethod
@@ -125,6 +130,7 @@ class StaticPopulation:
             to_t(payload["b2"]),
             to_t(payload["w3"]),
             to_t(payload["b3"]),
+            torch.tensor([payload["mutation_std"]], dtype=torch.float32, device=device),
             device,
         )
 
@@ -142,11 +148,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--time-budget-s", type=float, default=6.0)
     parser.add_argument("--population-size", type=int, default=64)
-    parser.add_argument("--elite-count", type=int, default=8)
+    parser.add_argument("--parent-count", type=int, default=8)
     parser.add_argument("--hidden-size", type=int, default=32)
-    parser.add_argument("--mutation-std", type=float, default=0.03)
+    parser.add_argument("--initial-mutation-std", type=float, default=0.03)
+    parser.add_argument("--mutation-scale-std", type=float, default=0.1)
     parser.add_argument("--val-fraction", type=float, default=0.2)
-    parser.add_argument("--train-fraction", type=float, default=0.65)
+    parser.add_argument("--train-fraction", type=float, default=0.9)
+    parser.add_argument("--cycle-seconds", type=float, default=20.0)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--max-steps", type=int, default=500)
     parser.add_argument("--dataset-path", default=str(UNIT13_DIR / "data" / "ppo_train_dataset.csv"))
@@ -232,79 +240,19 @@ def evaluate_policy(population: StaticPopulation, seed: int, max_steps: int, dev
     return total_reward, len(actions), sum(actions) / len(actions), switch_rate
 
 
-def main(args: argparse.Namespace) -> None:
-    device = resolve_device(args.device)
-    train_x, train_y, val_x, val_y = load_dataset(args.dataset_path, args.val_fraction, device)
-    start = time.perf_counter()
-    deadline = start + args.time_budget_s
-    fit_deadline = start + args.time_budget_s * args.train_fraction
-    metrics_path = Path(args.metrics_path)
-    comparison_path = Path(args.comparison_path)
-
-    population = StaticPopulation.random(args.population_size, args.hidden_size, device, args.seed)
-    history: list[dict] = []
-    best_json = None
-    generation = 0
-    best_population = population
-    best_index = 0
-    best_val_accuracy = 0.0
-    optimization_forward_example_evals = 0
-
-    while time.perf_counter() < fit_deadline:
-        fitness = fitness_on_dataset(population, train_x, train_y)
-        optimization_forward_example_evals += int(population.population_size * train_x.shape[0])
-        elite_fit, elite_idx = torch.topk(fitness, k=args.elite_count, largest=True, sorted=True)
-        idx0 = int(elite_idx[0].item())
-        train_accuracy = accuracy_for_genome(population, train_x, train_y, idx0)
-        val_accuracy = accuracy_for_genome(population, val_x, val_y, idx0)
-        optimization_forward_example_evals += int(train_x.shape[0] + val_x.shape[0])
-        row = {
-            "generation": generation,
-            "best_fitness": round(float(elite_fit[0].item()), 6),
-            "mean_fitness": round(float(fitness.mean().item()), 6),
-            "train_accuracy": round(train_accuracy, 6),
-            "val_accuracy": round(val_accuracy, 6),
-            "elapsed_s": round(time.perf_counter() - start, 3),
-        }
-        history.append(row)
-        write_csv(Path(args.history_path), history)
-        if val_accuracy >= best_val_accuracy:
-            best_val_accuracy = val_accuracy
-            best_index = idx0
-            best_population = population
-            best_json = population.best_json(idx0, float(elite_fit[0].item()))
-            Path(args.best_path).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.best_path).write_text(json.dumps(best_json, indent=2) + "\n")
-        write_progress_snapshot(
-            metrics_path,
-            comparison_path,
-            {
-                "stage": "training",
-                "elapsed_s": round(time.perf_counter() - start, 3),
-                "train_examples": int(train_x.shape[0]),
-                "val_examples": int(val_x.shape[0]),
-                "parameter_count": parameter_count(args.hidden_size),
-                "optimization_forward_example_evals": int(optimization_forward_example_evals),
-                "best_val_accuracy": float(best_val_accuracy),
-                "history": history,
-            },
-        )
-        if time.perf_counter() >= fit_deadline:
-            break
-        population = population.reproduce(elite_idx, args.mutation_std, args.seed + generation + 1)
-        generation += 1
-
-    if not history or best_json is None:
-        raise RuntimeError("Time budget expired before GA clone completed one generation.")
-
-    eval_episode_df = pd.read_csv(args.eval_episodes_path)
-    eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
+def evaluate_population_best(
+    best_json: dict,
+    eval_seeds: list[int],
+    max_steps: int,
+    device: torch.device,
+    deadline: float,
+) -> list[dict]:
     best_single = StaticPopulation.from_json(best_json, device)
     episode_rows: list[dict] = []
     for seed in eval_seeds:
         if time.perf_counter() >= deadline:
             break
-        ret, length, action_one_rate, switch_rate = evaluate_policy(best_single, seed, args.max_steps, device)
+        ret, length, action_one_rate, switch_rate = evaluate_policy(best_single, seed, max_steps, device)
         episode_rows.append(
             {
                 "seed": seed,
@@ -314,29 +262,128 @@ def main(args: argparse.Namespace) -> None:
                 "action_switch_rate": switch_rate,
             }
         )
-        write_csv(Path(args.episode_metrics_path), episode_rows)
-        write_progress_snapshot(
-            metrics_path,
-            comparison_path,
-            {
-                "stage": "evaluation",
+    return episode_rows
+
+
+def main(args: argparse.Namespace) -> None:
+    device = resolve_device(args.device)
+    train_x, train_y, val_x, val_y = load_dataset(args.dataset_path, args.val_fraction, device)
+    start = time.perf_counter()
+    deadline = start + args.time_budget_s
+    metrics_path = Path(args.metrics_path)
+    comparison_path = Path(args.comparison_path)
+    eval_episode_df = pd.read_csv(args.eval_episodes_path)
+    eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
+
+    population = StaticPopulation.random(args.population_size, args.hidden_size, device, args.seed)
+    population.mutation_std.fill_(args.initial_mutation_std)
+    history: list[dict] = []
+    best_json = None
+    generation = 0
+    best_val_accuracy = 0.0
+    optimization_forward_example_evals = 0
+    selection_generator = torch.Generator(device=device)
+    selection_generator.manual_seed(args.seed + 10_000)
+    latest_episode_rows: list[dict] = []
+    cycle_train_s = max(0.1, args.cycle_seconds * args.train_fraction)
+    cycle_eval_s = max(0.1, args.cycle_seconds * (1.0 - args.train_fraction))
+    while time.perf_counter() < deadline:
+        cycle_start = time.perf_counter()
+        train_slice_deadline = min(deadline, cycle_start + cycle_train_s)
+        while time.perf_counter() < train_slice_deadline:
+            fitness = fitness_on_dataset(population, train_x, train_y)
+            optimization_forward_example_evals += int(population.population_size * train_x.shape[0])
+            parent_fit, parent_idx = torch.topk(fitness, k=args.parent_count, largest=True, sorted=True)
+            idx0 = int(parent_idx[0].item())
+            train_accuracy = accuracy_for_genome(population, train_x, train_y, idx0)
+            val_accuracy = accuracy_for_genome(population, val_x, val_y, idx0)
+            optimization_forward_example_evals += int(train_x.shape[0] + val_x.shape[0])
+            row = {
+                "generation": generation,
+                "best_fitness": round(float(parent_fit[0].item()), 6),
+                "mean_fitness": round(float(fitness.mean().item()), 6),
+                "train_accuracy": round(train_accuracy, 6),
+                "val_accuracy": round(val_accuracy, 6),
+                "best_mutation_std": round(float(population.mutation_std[idx0].item()), 6),
+                "mean_mutation_std": round(float(population.mutation_std.mean().item()), 6),
                 "elapsed_s": round(time.perf_counter() - start, 3),
-                "train_examples": int(train_x.shape[0]),
-                "val_examples": int(val_x.shape[0]),
-                "parameter_count": parameter_count(args.hidden_size),
-                "optimization_forward_example_evals": int(optimization_forward_example_evals),
-                "best_val_accuracy": float(best_val_accuracy),
-                "episodes_completed": int(len(episode_rows)),
-                "partial_return_mean": float(np.mean([row["return"] for row in episode_rows])),
-                "history": history,
-            },
+            }
+            history.append(row)
+            write_csv(Path(args.history_path), history)
+            if val_accuracy >= best_val_accuracy:
+                best_val_accuracy = val_accuracy
+                best_json = population.best_json(idx0, float(parent_fit[0].item()))
+                Path(args.best_path).parent.mkdir(parents=True, exist_ok=True)
+                Path(args.best_path).write_text(json.dumps(best_json, indent=2) + "\n")
+            write_progress_snapshot(
+                metrics_path,
+                comparison_path,
+                {
+                    "stage": "training",
+                    "elapsed_s": round(time.perf_counter() - start, 3),
+                    "train_examples": int(train_x.shape[0]),
+                    "val_examples": int(val_x.shape[0]),
+                    "parameter_count": parameter_count(args.hidden_size),
+                    "optimization_forward_example_evals": int(optimization_forward_example_evals),
+                    "best_val_accuracy": float(best_val_accuracy),
+                    "best_mutation_std": float(population.mutation_std[idx0].item()),
+                    "mean_mutation_std": float(population.mutation_std.mean().item()),
+                    "history": history,
+                },
+            )
+            if time.perf_counter() >= train_slice_deadline:
+                break
+            sampled_parent_idx = parent_idx[torch.randint(0, args.parent_count, (args.population_size,), generator=selection_generator, device=device)]
+            population = population.reproduce(sampled_parent_idx, args.mutation_scale_std, args.seed + generation + 1)
+            generation += 1
+        eval_slice_deadline = min(deadline, cycle_start + cycle_train_s + cycle_eval_s)
+        if best_json is not None:
+            latest_episode_rows = evaluate_population_best(
+                best_json=best_json,
+                eval_seeds=eval_seeds,
+                max_steps=args.max_steps,
+                device=device,
+                deadline=eval_slice_deadline,
+            )
+            if latest_episode_rows:
+                write_csv(Path(args.episode_metrics_path), latest_episode_rows)
+                write_progress_snapshot(
+                    metrics_path,
+                    comparison_path,
+                    {
+                        "stage": "evaluation",
+                        "elapsed_s": round(time.perf_counter() - start, 3),
+                        "train_examples": int(train_x.shape[0]),
+                        "val_examples": int(val_x.shape[0]),
+                        "parameter_count": parameter_count(args.hidden_size),
+                        "optimization_forward_example_evals": int(optimization_forward_example_evals),
+                        "best_val_accuracy": float(best_val_accuracy),
+                        "best_mutation_std": float(best_json["mutation_std"]),
+                        "mean_mutation_std": float(population.mutation_std.mean().item()),
+                        "episodes_completed": int(len(latest_episode_rows)),
+                        "partial_return_mean": float(np.mean([row["return"] for row in latest_episode_rows])),
+                        "history": history,
+                    },
+                )
+        if time.perf_counter() >= deadline:
+            break
+
+    if not history or best_json is None:
+        raise RuntimeError("Time budget expired before GA clone completed one generation.")
+    if not latest_episode_rows:
+        latest_episode_rows = evaluate_population_best(
+            best_json=best_json,
+            eval_seeds=eval_seeds,
+            max_steps=args.max_steps,
+            device=device,
+            deadline=deadline,
         )
-    if not episode_rows:
+    if not latest_episode_rows:
         raise RuntimeError("Time budget expired before GA clone evaluation completed one episode.")
-    write_csv(Path(args.episode_metrics_path), episode_rows)
+    write_csv(Path(args.episode_metrics_path), latest_episode_rows)
 
     reference = json.loads(Path(args.eval_summary_path).read_text())
-    clone_df = pd.DataFrame(episode_rows)
+    clone_df = pd.DataFrame(latest_episode_rows)
     comparison = {
         "device": str(device),
         "time_budget_s": args.time_budget_s,
@@ -347,6 +394,15 @@ def main(args: argparse.Namespace) -> None:
         "optimization_forward_flops_estimate": int(optimization_forward_example_evals * forward_flops_per_example(args.hidden_size)),
         "best_train_accuracy": float(history[-1]["train_accuracy"]),
         "best_val_accuracy": float(best_val_accuracy),
+        "ga_strategy": {
+            "selection": "top_k_parent_sampling",
+            "parent_count": args.parent_count,
+            "self_adaptive_mutation_std": True,
+            "initial_mutation_std": args.initial_mutation_std,
+            "mutation_scale_std": args.mutation_scale_std,
+            "final_best_mutation_std": float(best_json["mutation_std"]),
+            "final_mean_mutation_std": float(population.mutation_std.mean().item()),
+        },
         "elapsed_s": round(time.perf_counter() - start, 3),
         "reference": {
             "return_mean": reference["return_mean"],
@@ -357,7 +413,7 @@ def main(args: argparse.Namespace) -> None:
             "action_switch_rate_mean": reference["action_switch_rate_mean"],
         },
         "clone": {
-            "episodes_completed": int(len(episode_rows)),
+            "episodes_completed": int(len(latest_episode_rows)),
             "return_mean": float(clone_df["return"].mean()),
             "return_std": float(clone_df["return"].std(ddof=0)),
             "length_mean": float(clone_df["length"].mean()),

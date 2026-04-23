@@ -66,8 +66,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--warmup-fraction", type=float, default=0.05)
     parser.add_argument("--min-lr-scale", type=float, default=0.05)
     parser.add_argument("--val-fraction", type=float, default=0.2)
-    parser.add_argument("--collect-fraction", type=float, default=0.45)
-    parser.add_argument("--train-fraction", type=float, default=0.35)
+    parser.add_argument("--collect-fraction", type=float, default=0.1)
+    parser.add_argument("--train-fraction", type=float, default=0.9)
+    parser.add_argument("--cycle-seconds", type=float, default=20.0)
     parser.add_argument("--eval-summary-path", default=str(UNIT12_DIR / "plot" / "summary.json"))
     parser.add_argument("--eval-episodes-path", default=str(UNIT12_DIR / "plot" / "episode_metrics.csv"))
     parser.add_argument("--target-agent-path", default=str(UNIT3_MODEL_PATH))
@@ -198,21 +199,10 @@ def evaluate_loader(
     return correct / total, loss_total / total
 
 
-def train_clone(
+def build_loaders(
     train_rows: list[dict],
-    hidden_size: int,
-    batch_size: int,
-    lr: float,
-    warmup_fraction: float,
-    min_lr_scale: float,
     val_fraction: float,
-    device: torch.device,
-    train_start: float,
-    deadline: float,
-    metrics_path: Path,
-    comparison_path: Path,
-    model_path: Path,
-) -> tuple[ClonePolicy, list[dict], float, float, int, int, int]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int, int]:
     x = torch.tensor([[r["x"], r["x_dot"], r["theta"], r["theta_dot"]] for r in train_rows], dtype=torch.float32)
     y = torch.tensor([r["action"] for r in train_rows], dtype=torch.int64)
     total_count = int(y.shape[0])
@@ -222,29 +212,48 @@ def train_clone(
     train_y = y[:train_count]
     val_x = x[train_count:]
     val_y = y[train_count:]
+    return train_x, train_y, val_x, val_y, train_count, val_count
+
+
+def train_for_slice(
+    policy: ClonePolicy,
+    optimizer: torch.optim.Optimizer,
+    loss_fn: nn.Module,
+    train_x: torch.Tensor,
+    train_y: torch.Tensor,
+    val_x: torch.Tensor,
+    val_y: torch.Tensor,
+    batch_size: int,
+    lr: float,
+    warmup_fraction: float,
+    min_lr_scale: float,
+    train_examples: int,
+    val_examples: int,
+    train_start: float,
+    total_deadline: float,
+    slice_deadline: float,
+    metrics_path: Path,
+    comparison_path: Path,
+    model_path: Path,
+    history: list[dict],
+    best_val_accuracy: float,
+    forward_example_evals: int,
+) -> tuple[list[dict], float, int]:
     train_loader = DataLoader(TensorDataset(train_x, train_y), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(TensorDataset(val_x, val_y), batch_size=batch_size, shuffle=False)
-    policy = ClonePolicy(hidden_size).to(device)
-    optimizer = torch.optim.AdamW(policy.parameters(), lr=lr)
-    loss_fn = nn.CrossEntropyLoss()
-    history: list[dict] = []
-    best_state = None
-    best_val_accuracy = -1.0
-    forward_example_evals = 0
-
-    while time.perf_counter() < deadline:
+    while time.perf_counter() < slice_deadline:
         epoch_loss = 0.0
         correct = 0
         total = 0
         policy.train()
         for batch_x, batch_y in train_loader:
-            if time.perf_counter() >= deadline:
+            if time.perf_counter() >= slice_deadline:
                 break
-            train_progress = (time.perf_counter() - train_start) / max(1e-8, deadline - train_start)
+            train_progress = (time.perf_counter() - train_start) / max(1e-8, total_deadline - train_start)
             current_lr = lr * scheduled_lr_scale(train_progress, warmup_fraction, min_lr_scale)
             set_optimizer_lr(optimizer, current_lr)
-            batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device)
+            batch_x = batch_x.to(policy.net[0].weight.device)
+            batch_y = batch_y.to(policy.net[0].weight.device)
             optimizer.zero_grad(set_to_none=True)
             logits = policy(batch_x)
             loss = loss_fn(logits, batch_y)
@@ -256,8 +265,8 @@ def train_clone(
             forward_example_evals += int(batch_y.numel())
         if total == 0:
             break
-        val_accuracy, val_loss = evaluate_loader(policy, val_loader, device, loss_fn)
-        forward_example_evals += val_count
+        val_accuracy, val_loss = evaluate_loader(policy, val_loader, policy.net[0].weight.device, loss_fn)
+        forward_example_evals += val_examples
         history.append(
             {
                 "epoch": len(history) + 1,
@@ -271,18 +280,17 @@ def train_clone(
         )
         if val_accuracy >= best_val_accuracy:
             best_val_accuracy = val_accuracy
-            best_state = {k: v.detach().cpu().clone() for k, v in policy.state_dict().items()}
             model_path.parent.mkdir(parents=True, exist_ok=True)
-            torch.save(best_state, model_path)
+            torch.save(policy.state_dict(), model_path)
         write_progress_snapshot(
             metrics_path,
             comparison_path,
             {
                 "stage": "training",
                 "elapsed_s": round(time.perf_counter() - train_start, 3),
-                "train_examples": train_count,
-                "val_examples": val_count,
-                "parameter_count": parameter_count(hidden_size),
+                "train_examples": train_examples,
+                "val_examples": val_examples,
+                "parameter_count": parameter_count(policy.net[0].out_features),
                 "optimization_forward_example_evals": int(forward_example_evals),
                 "scheduler": {
                     "type": "linear_warmup_cosine_decay",
@@ -295,10 +303,7 @@ def train_clone(
                 "train_history": history,
             },
         )
-    if best_state is not None:
-        policy.load_state_dict(best_state)
-    final_train_accuracy = history[-1]["train_accuracy"] if history else 0.0
-    return policy, history, final_train_accuracy, max(best_val_accuracy, 0.0), train_count, val_count, forward_example_evals
+    return history, best_val_accuracy, forward_example_evals
 
 
 @torch.no_grad()
@@ -386,7 +391,6 @@ def main(args: argparse.Namespace) -> None:
     start = time.perf_counter()
     total_deadline = start + args.time_budget_s
     collect_deadline = start + args.time_budget_s * args.collect_fraction
-    train_deadline = min(total_deadline, collect_deadline + args.time_budget_s * args.train_fraction)
     dataset_path = Path(args.dataset_path)
     metrics_path = Path(args.metrics_path)
     comparison_path = Path(args.comparison_path)
@@ -423,70 +427,100 @@ def main(args: argparse.Namespace) -> None:
             },
         },
     )
-
-    policy, train_history, final_train_accuracy, best_val_accuracy, train_count, val_count, optimization_forward_example_evals = train_clone(
-        train_rows=dataset_rows,
-        hidden_size=args.hidden_size,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        warmup_fraction=args.warmup_fraction,
-        min_lr_scale=args.min_lr_scale,
-        val_fraction=args.val_fraction,
-        device=device,
-        train_start=time.perf_counter(),
-        deadline=train_deadline,
-        metrics_path=metrics_path,
-        comparison_path=comparison_path,
-        model_path=model_path,
-    )
-    if not train_history:
-        raise RuntimeError("Time budget expired before clone training completed one epoch.")
-
+    train_x, train_y, val_x, val_y, train_count, val_count = build_loaders(dataset_rows, args.val_fraction)
+    train_x = train_x.to(device)
+    train_y = train_y.to(device)
+    val_x = val_x.to(device)
+    val_y = val_y.to(device)
+    policy = ClonePolicy(args.hidden_size).to(device)
+    optimizer = torch.optim.AdamW(policy.parameters(), lr=args.lr)
+    loss_fn = nn.CrossEntropyLoss()
+    train_history: list[dict] = []
+    best_val_accuracy = -1.0
+    optimization_forward_example_evals = 0
     eval_episode_df = pd.read_csv(args.eval_episodes_path)
     eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
-    rollout_rows = []
-    episode_rows = []
-    for seed in eval_seeds:
-        partial_rollouts, partial_episodes = evaluate_clone(
+    latest_rollout_rows: list[dict] = []
+    latest_episode_rows: list[dict] = []
+    cycle_train_s = max(0.1, args.cycle_seconds * args.train_fraction)
+    cycle_eval_s = max(0.1, args.cycle_seconds * (1.0 - args.train_fraction))
+    while time.perf_counter() < total_deadline:
+        cycle_start = time.perf_counter()
+        train_slice_deadline = min(total_deadline, cycle_start + cycle_train_s)
+        train_history, best_val_accuracy, optimization_forward_example_evals = train_for_slice(
             policy=policy,
-            eval_seeds=[seed],
+            optimizer=optimizer,
+            loss_fn=loss_fn,
+            train_x=train_x,
+            train_y=train_y,
+            val_x=val_x,
+            val_y=val_y,
+            batch_size=args.batch_size,
+            lr=args.lr,
+            warmup_fraction=args.warmup_fraction,
+            min_lr_scale=args.min_lr_scale,
+            train_examples=train_count,
+            val_examples=val_count,
+            train_start=start,
+            total_deadline=total_deadline,
+            slice_deadline=train_slice_deadline,
+            metrics_path=metrics_path,
+            comparison_path=comparison_path,
+            model_path=model_path,
+            history=train_history,
+            best_val_accuracy=best_val_accuracy,
+            forward_example_evals=optimization_forward_example_evals,
+        )
+        eval_slice_deadline = min(total_deadline, cycle_start + cycle_train_s + cycle_eval_s)
+        if train_history:
+            latest_rollout_rows, latest_episode_rows = evaluate_clone(
+                policy=policy,
+                eval_seeds=eval_seeds,
+                max_steps=args.max_steps,
+                device=device,
+                deadline=eval_slice_deadline,
+            )
+            if latest_episode_rows:
+                write_csv(Path(args.episode_metrics_path), latest_episode_rows)
+                write_progress_snapshot(
+                    metrics_path,
+                    comparison_path,
+                    {
+                        "stage": "evaluation",
+                        "elapsed_s": round(time.perf_counter() - start, 3),
+                        "dataset_steps": len(dataset_rows),
+                        "train_examples": train_count,
+                        "val_examples": val_count,
+                        "train_accuracy": float(train_history[-1]["train_accuracy"]),
+                        "best_val_accuracy": float(best_val_accuracy),
+                        "episodes_completed": int(len(latest_episode_rows)),
+                        "partial_return_mean": float(np.mean([row["return"] for row in latest_episode_rows])),
+                        "scheduler": {
+                            "type": "linear_warmup_cosine_decay",
+                            "base_lr": args.lr,
+                            "warmup_fraction": args.warmup_fraction,
+                            "min_lr_scale": args.min_lr_scale,
+                            "current_lr": float(train_history[-1]["lr"]),
+                        },
+                        "train_history": train_history,
+                    },
+                )
+        if time.perf_counter() >= total_deadline:
+            break
+    if not train_history:
+        raise RuntimeError("Time budget expired before clone training completed one epoch.")
+    if not latest_episode_rows:
+        latest_rollout_rows, latest_episode_rows = evaluate_clone(
+            policy=policy,
+            eval_seeds=eval_seeds,
             max_steps=args.max_steps,
             device=device,
             deadline=total_deadline,
         )
-        if not partial_episodes:
-            break
-        rollout_rows.extend(partial_rollouts)
-        episode_rows.extend(partial_episodes)
-        write_csv(Path(args.episode_metrics_path), episode_rows)
-        write_progress_snapshot(
-            metrics_path,
-            comparison_path,
-            {
-                "stage": "evaluation",
-                "elapsed_s": round(time.perf_counter() - start, 3),
-                "dataset_steps": len(dataset_rows),
-                "train_examples": train_count,
-                "val_examples": val_count,
-                "train_accuracy": float(final_train_accuracy),
-                "best_val_accuracy": float(best_val_accuracy),
-                "episodes_completed": int(len(episode_rows)),
-                "partial_return_mean": float(np.mean([row["return"] for row in episode_rows])),
-                "scheduler": {
-                    "type": "linear_warmup_cosine_decay",
-                    "base_lr": args.lr,
-                    "warmup_fraction": args.warmup_fraction,
-                    "min_lr_scale": args.min_lr_scale,
-                    "current_lr": float(train_history[-1]["lr"]),
-                },
-                "train_history": train_history,
-            },
-        )
-    if not episode_rows:
+    if not latest_episode_rows:
         raise RuntimeError("Time budget expired before clone evaluation completed one episode.")
-
-    write_csv(Path(args.episode_metrics_path), episode_rows)
-    clone_summary = summarize_rollouts(rollout_rows, episode_rows)
+    write_csv(Path(args.episode_metrics_path), latest_episode_rows)
+    clone_summary = summarize_rollouts(latest_rollout_rows, latest_episode_rows)
     reference_summary = json.loads(Path(args.eval_summary_path).read_text())
     comparison = {
         "device": str(device),
@@ -506,7 +540,7 @@ def main(args: argparse.Namespace) -> None:
             "min_lr_scale": args.min_lr_scale,
             "final_lr": float(train_history[-1]["lr"]),
         },
-        "train_accuracy": float(final_train_accuracy),
+        "train_accuracy": float(train_history[-1]["train_accuracy"]),
         "best_val_accuracy": float(best_val_accuracy),
         "elapsed_s": round(time.perf_counter() - start, 3),
         "reference": {

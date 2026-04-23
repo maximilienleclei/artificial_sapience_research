@@ -19,6 +19,7 @@
 - As of April 23, 2026, the timed training loop no longer stops early on high validation accuracy; timed slices now run to the allotted wall-clock budget unless killed externally.
 - As of April 23, 2026, the unit writes inspectable progress snapshots during dataset, training, and evaluation stages instead of waiting until process exit.
 - As of April 23, 2026, the supervised optimizer uses `AdamW` with a linear-warmup cosine-decay learning-rate schedule instead of a fixed learning rate.
+- As of April 23, 2026, training and evaluation alternate in repeated time cycles; each cycle trains for about 90% of the cycle and then evaluates the latest checkpoint for the remaining 10%.
 
 ## Verification
 
@@ -54,6 +55,11 @@
   - validation accuracy `1.0000`
   - closed-loop return mean `498.29`
   - action-switch-rate mean delta vs PPO `0.0158`
+- Alternating-cycle verification on April 23, 2026 confirmed the 90/10 pattern:
+  - `30s` total run with `10s` cycles
+  - latest checkpoint validation accuracy `1.0000`
+  - partial fresh eval covered `1` benchmark episode in the eval slice
+  - that partial eval returned `174.0`, illustrating that tight eval slices trade benchmark coverage for more frequent check-ins
 
 ## Artifacts
 

@@ -17,6 +17,8 @@
 - It is meant to answer whether a small GA can beat Unit 13 on the same benchmark without changing the target definition.
 - As of April 23, 2026, the script uses unit-local default output paths and absolute cross-unit benchmark/dataset defaults so detached/background runs do not fail from relative path resolution.
 - As of April 23, 2026, the unit also writes inspectable progress snapshots during training and evaluation instead of waiting until process exit for metrics JSON.
+- As of April 23, 2026, the GA no longer keeps unchanged elites. It now samples parents from the top set and mutates the entire next population, with each individual carrying its own mutable `mutation_std`.
+- As of April 23, 2026, evolution and evaluation alternate in repeated time cycles; each cycle spends about 90% of its time evolving and the remaining 10% evaluating the latest checkpoint.
 
 ## Verification
 
@@ -45,6 +47,17 @@
 - Verification fix on April 23, 2026 confirmed the path-default repair:
   - a `12s` timed verification slice completed successfully instead of failing on Unit 12 path lookup
   - verification result: best validation accuracy `0.9923`, clone return mean `500.0`
+- No-elite mutation-scale verification on April 23, 2026 confirmed the self-adaptive path:
+  - `12s` timed verification slice
+  - best validation accuracy `0.9512`
+  - closed-loop return mean `500.0`
+  - action-switch-rate mean delta vs PPO `0.0102`
+  - final best / mean mutation std about `0.00214 / 0.00213`
+- Alternating-cycle verification on April 23, 2026 confirmed the 90/10 pattern:
+  - `30s` total run with `10s` cycles
+  - latest checkpoint validation accuracy `0.9846`
+  - partial fresh eval covered `2` benchmark episodes in the eval slices
+  - those partial evals kept return mean `500.0` with action-switch-rate mean delta `0.0551`
 
 ## Artifacts
 
