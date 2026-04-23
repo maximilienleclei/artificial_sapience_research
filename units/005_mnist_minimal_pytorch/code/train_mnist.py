@@ -67,7 +67,10 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> floa
 
 def train(args: argparse.Namespace) -> dict[str, float | int | str]:
     torch.manual_seed(args.seed)
-    device = torch.device(args.device)
+    device_name = args.device
+    if device_name == "auto":
+        device_name = "cuda" if torch.cuda.is_available() else "cpu"
+    device = torch.device(device_name)
     data_dir = Path(args.data_dir)
     model_path = Path(args.model_path)
     metrics_path = Path(args.metrics_path)
@@ -125,7 +128,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-dir", default="../data/raw")
     parser.add_argument("--model-path", default="../model/mnist_linear.pt")
     parser.add_argument("--metrics-path", default="../model/metrics.json")
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--lr", type=float, default=0.002)

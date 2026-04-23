@@ -5,9 +5,9 @@
 - `main` is a fresh restart branch as of April 22, 2026.
 - Prior exploratory work has been reintroduced as rerunnable research units under `units/`.
 - `005_mnist_minimal_pytorch` is a minimal PyTorch port of the old `../ai_research/projects/dl_classify_mnist` project, keeping compressed MNIST data and a standalone script instead of the old Lightning/Hydra/W&B stack.
-- The old `to-be-deleted-archive-20260422` branch was deleted after the experiment archives were verified.
 - No new active experiment has been selected yet.
-- On the current NVIDIA RTX 5070 Ti Laptop GPU machine, `C:\Users\Max\venv` uses Python `3.14.3` with PyTorch `2.11.0+cu130`; CUDA is visible and reports one RTX 5070 Ti Laptop GPU.
+- Known machine environment: NVIDIA RTX 5070 Ti Laptop GPU with `C:\Users\Max\venv`, Python `3.14.3`, PyTorch `2.11.0+cu130`; CUDA reports one RTX 5070 Ti Laptop GPU.
+- Known machine environment: AMD Radeon RX 7800 XT with `C:\Users\Max\venv`, PyTorch `2.9.1+rocm7.2.1`; PyTorch reports `cuda=True`, HIP `7.2.53211-158bd99533`, and device name `AMD  Radeon RX 7800 XT`.
 
 ## Working Agreement
 

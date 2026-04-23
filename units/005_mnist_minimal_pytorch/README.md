@@ -14,6 +14,8 @@ Run from `code/`:
 C:\Users\Max\venv\Scripts\python.exe .\train_mnist.py --epochs 3 --batch-size 256
 ```
 
+The script defaults to `--device auto`, which uses `cuda` when PyTorch exposes a GPU. On the AMD Radeon RX 7800 XT machine, the ROCm PyTorch build exposes the GPU through that CUDA device path.
+
 Quick smoke test:
 
 ```powershell

@@ -13,3 +13,4 @@
 11. Expect the user to work across multiple machines. Record machine-specific environment facts, but do not assume one GPU or Python stack is permanent.
 12. For archived units, put generated plots and plot-adjacent metrics in that unit's `plot/` folder; units without plots should not have a `plot/` folder.
 13. When optimizing experiments, report concrete throughput or outcome numbers rather than relying on epochs alone.
+14. Keep handoff docs future-useful and prune stale process history. Do not preserve notes about completed branch cleanup, temporary migration mechanics, or one-off housekeeping unless they affect future decisions, reproducibility, constraints, or artifact discovery.

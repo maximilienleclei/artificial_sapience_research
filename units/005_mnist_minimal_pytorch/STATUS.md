@@ -22,6 +22,10 @@
 - Command: `python .\train_mnist.py --epochs 1 --train-limit 2048 --test-limit 1024 --batch-size 256`
 - Result: `test_accuracy=0.69043`, `final_train_loss=1.13252`, `examples_per_s=42273.7` on CPU.
 - Artifacts: `model/mnist_linear.pt` and `model/metrics.json`.
+- GPU smoke test verified on April 23, 2026 on the AMD Radeon RX 7800 XT machine using PyTorch `2.9.1+rocm7.2.1`; PyTorch exposes this ROCm GPU through `device=cuda`.
+- GPU command: `python .\train_mnist.py --device cuda --epochs 1 --train-limit 2048 --test-limit 1024 --batch-size 256 --metrics-path ..\model\metrics_cuda_smoke.json --model-path ..\model\mnist_linear_cuda_smoke.pt`
+- GPU result: `test_accuracy=0.69043`, `final_train_loss=1.13252`, `examples_per_s=2609.9`. The tiny smoke test is slower on GPU because launch overhead dominates.
+- The script now defaults to `--device auto`; on the AMD ROCm machine this resolves to `cuda`.
 
 ## Next Steps
 
