@@ -70,7 +70,7 @@
   - from the second probe onward, return mean stayed at `500.0`
   - final probe used all `13` Unit 12 benchmark seeds
   - final action-switch-rate delta vs PPO `0.0`
-  - comparison plot saved at `../014_ga_ppo_action_clone/plot/u013_u014_5min_behavior_compare.svg`
+  - comparison plot saved at `../015_ga_ppo_action_clone/plot/u014_u015_5min_behavior_compare.svg`
 
 ## Artifacts
 
@@ -84,4 +84,4 @@
 ## Next Steps
 
 - Run longer bounded slices under the new `val_interval_s` setup and judge convergence from both the validation curve and the in-flight closed-loop behavior probes.
-- Compare this baseline against Unit 14 as the fair same-dataset optimizer comparison.
+- Compare this baseline against Unit 15 as the fair same-dataset optimizer comparison.

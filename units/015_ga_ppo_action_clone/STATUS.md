@@ -2,7 +2,7 @@
 
 ## Purpose
 
-- Provide the smallest fair GA analogue to Unit 13: same PPO action-cloning target style, but optimized by mutation/selection instead of gradient descent.
+- Provide the smallest fair GA analogue to Unit 14: same PPO action-cloning target style, but optimized by mutation/selection instead of gradient descent.
 
 ## Contents
 
@@ -14,7 +14,7 @@
 ## Notes
 
 - This unit intentionally keeps the task narrow: action fitting first, closed-loop benchmark second.
-- It is meant to answer whether a small GA can beat Unit 13 on the same benchmark without changing the target definition.
+- It is meant to answer whether a small GA can beat Unit 14 on the same benchmark without changing the target definition.
 - As of April 23, 2026, the script uses unit-local default output paths and absolute cross-unit benchmark/dataset defaults so detached/background runs do not fail from relative path resolution.
 - As of April 23, 2026, the unit also writes inspectable progress snapshots during training and evaluation instead of waiting until process exit for metrics JSON.
 - As of April 23, 2026, the GA no longer keeps unchanged elites. It now samples parents from the top set and mutates the entire next population, with each individual carrying its own mutable `mutation_std`.
@@ -22,7 +22,7 @@
 
 ## Verification
 
-- Initial bounded smoke run on April 23, 2026 used the Unit 13 PPO dataset, `C:\Users\Max\venv\Scripts\python.exe`, and the AMD GPU machine.
+- Initial bounded smoke run on April 23, 2026 used the Unit 14 PPO dataset, `C:\Users\Max\venv\Scripts\python.exe`, and the AMD GPU machine.
 - Saved smoke result:
   - train/val examples `1557 / 389`
   - best train accuracy `0.9705`
@@ -35,7 +35,7 @@
     - return mean `0.0`
     - action=`1` mean rate `0.0`
     - action-switch-rate mean `0.0449`
-- Fairer same-dataset rerun on April 23, 2026 kept the same Unit 13 PPO dataset and the same `6s` optimizer budget:
+- Fairer same-dataset rerun on April 23, 2026 kept the same Unit 14 PPO dataset and the same `6s` optimizer budget:
   - same train/val examples `1557 / 389`
   - parameter count `1282`
   - optimization forward-example evals `73,147,680`
@@ -68,8 +68,8 @@
   - return mean reached `500.0` early and stayed there
   - final probe used all `13` Unit 12 benchmark seeds
   - final action-switch-rate delta vs PPO about `0.0089`
-  - comparison plot saved at `plot/u013_u014_5min_behavior_compare.svg`
-  - log-scale saturation view saved at `plot/u013_u014_5min_behavior_saturation_log.svg`
+  - comparison plot saved at `plot/u014_u015_5min_behavior_compare.svg`
+  - log-scale saturation view saved at `plot/u014_u015_5min_behavior_saturation_log.svg`
 
 ## Artifacts
 
@@ -83,4 +83,4 @@
 ## Next Steps
 
 - Run longer bounded slices under the new `val_interval_s` setup and judge convergence from both the validation curve and the in-flight closed-loop behavior probes.
-- Keep using the same frozen dataset when comparing against Unit 13 so the optimizer difference stays isolated.
+- Keep using the same frozen dataset when comparing against Unit 14 so the optimizer difference stays isolated.

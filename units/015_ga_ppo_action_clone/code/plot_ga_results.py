@@ -16,7 +16,7 @@ def main() -> None:
     fig, axes = plt.subplots(3, 1, figsize=(8, 9))
     axes[0].plot(history["elapsed_s"], history["train_accuracy"], color="#32746d", label="train accuracy")
     axes[0].plot(history["elapsed_s"], history["val_accuracy"], color="#4c5f99", label="val accuracy")
-    axes[0].set_title("Unit 14 GA PPO Action Clone")
+    axes[0].set_title("Unit 15 GA PPO Action Clone")
     axes[0].set_ylabel("accuracy")
     axes[0].grid(axis="y", linestyle=":", alpha=0.35)
     axes[0].legend()

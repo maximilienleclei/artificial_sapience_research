@@ -1,10 +1,10 @@
-# 014_ga_ppo_action_clone
+# 015_ga_ppo_action_clone
 
-Minimal GA counterpart to Unit 13's supervised PPO behavior clone.
+Minimal GA counterpart to Unit 14's supervised PPO behavior clone.
 
 This unit:
 
-- reuses the PPO state-action dataset shape from Unit 13
+- reuses the PPO state-action dataset shape from Unit 14
 - fits a small policy with genetic search instead of gradient descent
 - reports train/validation action fit
 - evaluates the best genome closed loop on the Unit 12 benchmark seeds
