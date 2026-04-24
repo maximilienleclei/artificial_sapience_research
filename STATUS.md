@@ -19,6 +19,7 @@
 - Units 13 and 14 now also flush inspectable progress snapshots mid-run, so convergence/status checks no longer have to wait for process exit to see useful state.
 - Unit 13 now uses `AdamW` plus a linear-warmup cosine-decay schedule rather than a fixed LR; a short verification slice reached validation accuracy `1.0000`, return mean `498.29`, and switch-rate delta `0.0158`.
 - Units 13 and 14 now use the full wall-clock budget for optimization, run validation probes every configurable `val_interval_s`, and include a closed-loop behavior probe at each validation event using the latest checkpoint/genome.
+- In matched 5-minute reruns with in-validation behavior probes, Unit 14 reached strong closed-loop behavior earlier, but Unit 13 caught up and finished best: both ended at return mean `500.0` over all `13` Unit 12 benchmark seeds, with final action-switch-rate delta `0.0` for Unit 13 versus about `0.0089` for Unit 14.
 - Known machine environment: NVIDIA RTX 5070 Ti Laptop GPU with `C:\Users\Max\venv`, Python `3.14.3`, PyTorch `2.11.0+cu130`; CUDA reports one RTX 5070 Ti Laptop GPU.
 - Known machine environment: AMD Radeon RX 7800 XT with `C:\Users\Max\venv`, PyTorch `2.9.1+rocm7.2.1`; PyTorch reports `cuda=True`, HIP `7.2.53211-158bd99533`, and device name `AMD  Radeon RX 7800 XT`.
 

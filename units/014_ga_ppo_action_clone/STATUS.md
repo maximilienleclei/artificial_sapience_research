@@ -63,6 +63,12 @@
   - latest checkpoint validation accuracy `0.9512`
   - latest closed-loop return mean `500.0`
   - `closed_loop_evaluated=true` in the final metrics snapshot
+- Five-minute rerun on April 23, 2026 with `val_interval_s=30` showed the behavior-probe trajectory over time:
+  - early probe return mean `47.38`
+  - return mean reached `500.0` early and stayed there
+  - final probe used all `13` Unit 12 benchmark seeds
+  - final action-switch-rate delta vs PPO about `0.0089`
+  - comparison plot saved at `plot/u013_u014_5min_behavior_compare.svg`
 
 ## Artifacts
 
