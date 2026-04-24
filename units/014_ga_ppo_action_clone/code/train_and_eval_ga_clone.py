@@ -273,6 +273,7 @@ def main(args: argparse.Namespace) -> None:
     comparison_path = Path(args.comparison_path)
     eval_episode_df = pd.read_csv(args.eval_episodes_path)
     eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
+    reference = json.loads(Path(args.eval_summary_path).read_text())
 
     population = StaticPopulation.random(args.population_size, args.hidden_size, device, args.seed)
     population.mutation_std.fill_(args.initial_mutation_std)
@@ -283,7 +284,7 @@ def main(args: argparse.Namespace) -> None:
     optimization_forward_example_evals = 0
     selection_generator = torch.Generator(device=device)
     selection_generator.manual_seed(args.seed + 10_000)
-    latest_episode_rows: list[dict] = []
+    latest_behavior: dict | None = None
     next_val_at = start
     while time.perf_counter() < deadline:
         fitness = fitness_on_dataset(population, train_x, train_y)
@@ -295,6 +296,28 @@ def main(args: argparse.Namespace) -> None:
         if time.perf_counter() >= next_val_at:
             val_accuracy = accuracy_for_genome(population, val_x, val_y, idx0)
             optimization_forward_example_evals += int(val_x.shape[0])
+            current_json = population.best_json(idx0, float(parent_fit[0].item()))
+            episode_rows = evaluate_population_best(
+                best_json=current_json,
+                eval_seeds=eval_seeds,
+                max_steps=args.max_steps,
+                device=device,
+                deadline=deadline,
+            )
+            if episode_rows:
+                write_csv(Path(args.episode_metrics_path), episode_rows)
+                clone_df = pd.DataFrame(episode_rows)
+                latest_behavior = {
+                    "episodes_completed": int(len(episode_rows)),
+                    "return_mean": float(clone_df["return"].mean()),
+                    "return_std": float(clone_df["return"].std(ddof=0)),
+                    "action_one_rate_mean": float(clone_df["action_one_rate"].mean()),
+                    "action_switch_rate_mean": float(clone_df["action_switch_rate"].mean()),
+                    "return_mean_abs": abs(float(clone_df["return"].mean()) - reference["return_mean"]),
+                    "action_switch_rate_mean_abs": abs(
+                        float(clone_df["action_switch_rate"].mean()) - reference["action_switch_rate_mean"]
+                    ),
+                }
             next_val_at = time.perf_counter() + args.val_interval_s
         row = {
             "generation": generation,
@@ -306,6 +329,10 @@ def main(args: argparse.Namespace) -> None:
             "mean_mutation_std": round(float(population.mutation_std.mean().item()), 6),
             "elapsed_s": round(time.perf_counter() - start, 3),
         }
+        if latest_behavior is not None:
+            row["closed_loop_episodes_completed"] = latest_behavior["episodes_completed"]
+            row["closed_loop_return_mean"] = round(latest_behavior["return_mean"], 6)
+            row["closed_loop_switch_delta"] = round(latest_behavior["action_switch_rate_mean_abs"], 6)
         history.append(row)
         write_csv(Path(args.history_path), history)
         if val_accuracy is not None and val_accuracy >= best_val_accuracy:
@@ -326,6 +353,7 @@ def main(args: argparse.Namespace) -> None:
                 "best_val_accuracy": float(best_val_accuracy) if best_val_accuracy >= 0 else None,
                 "best_mutation_std": float(population.mutation_std[idx0].item()),
                 "mean_mutation_std": float(population.mutation_std.mean().item()),
+                "latest_behavior": latest_behavior,
                 "history": history,
             },
         )
@@ -335,21 +363,7 @@ def main(args: argparse.Namespace) -> None:
 
     if not history or best_json is None:
         raise RuntimeError("Time budget expired before GA clone completed one generation.")
-    closed_loop_evaluated = False
-    if not latest_episode_rows and time.perf_counter() < deadline:
-        latest_episode_rows = evaluate_population_best(
-            best_json=best_json,
-            eval_seeds=eval_seeds,
-            max_steps=args.max_steps,
-            device=device,
-            deadline=deadline,
-        )
-    if latest_episode_rows:
-        closed_loop_evaluated = True
-        write_csv(Path(args.episode_metrics_path), latest_episode_rows)
-
-    reference = json.loads(Path(args.eval_summary_path).read_text())
-    clone_df = pd.DataFrame(latest_episode_rows) if latest_episode_rows else None
+    closed_loop_evaluated = latest_behavior is not None
     comparison = {
         "device": str(device),
         "time_budget_s": args.time_budget_s,
@@ -380,28 +394,14 @@ def main(args: argparse.Namespace) -> None:
             "action_switch_rate_mean": reference["action_switch_rate_mean"],
         },
         "clone": (
-            {
-                "episodes_completed": int(len(latest_episode_rows)),
-                "return_mean": float(clone_df["return"].mean()),
-                "return_std": float(clone_df["return"].std(ddof=0)),
-                "length_mean": float(clone_df["length"].mean()),
-                "length_std": float(clone_df["length"].std(ddof=0)),
-                "action_one_rate_mean": float(clone_df["action_one_rate"].mean()),
-                "action_one_rate_std": float(clone_df["action_one_rate"].std(ddof=0)),
-                "action_switch_rate_mean": float(clone_df["action_switch_rate"].mean()),
-                "action_switch_rate_std": float(clone_df["action_switch_rate"].std(ddof=0)),
-            }
+            latest_behavior
             if closed_loop_evaluated
             else {"episodes_completed": 0}
         ),
         "deltas": (
             {
-                "return_mean_abs": abs(float(clone_df["return"].mean()) - reference["return_mean"]),
-                "return_std_abs": abs(float(clone_df["return"].std(ddof=0)) - reference["return_std"]),
-                "length_mean_abs": abs(float(clone_df["length"].mean()) - reference["length_mean"]),
-                "length_std_abs": abs(float(clone_df["length"].std(ddof=0)) - reference["length_std"]),
-                "action_one_rate_mean_abs": abs(float(clone_df["action_one_rate"].mean()) - reference["action_one_rate_mean"]),
-                "action_switch_rate_mean_abs": abs(float(clone_df["action_switch_rate"].mean()) - reference["action_switch_rate_mean"]),
+                "return_mean_abs": latest_behavior["return_mean_abs"],
+                "action_switch_rate_mean_abs": latest_behavior["action_switch_rate_mean_abs"],
             }
             if closed_loop_evaluated
             else None

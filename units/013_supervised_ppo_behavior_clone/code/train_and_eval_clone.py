@@ -234,14 +234,19 @@ def train_for_slice(
     metrics_path: Path,
     comparison_path: Path,
     model_path: Path,
+    episode_metrics_path: Path,
     history: list[dict],
     best_val_accuracy: float,
     forward_example_evals: int,
-) -> tuple[list[dict], float, int]:
+    eval_seeds: list[int],
+    max_steps: int,
+    reference_summary: dict,
+) -> tuple[list[dict], float, int, dict | None]:
     train_loader = DataLoader(TensorDataset(train_x, train_y), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(TensorDataset(val_x, val_y), batch_size=batch_size, shuffle=False)
     next_val_at = train_start
     current_lr = lr
+    latest_behavior: dict | None = None
     while time.perf_counter() < total_deadline:
         epoch_loss = 0.0
         correct = 0
@@ -270,17 +275,40 @@ def train_for_slice(
         if now >= next_val_at:
             val_accuracy, val_loss = evaluate_loader(policy, val_loader, policy.net[0].weight.device, loss_fn)
             forward_example_evals += val_examples
-            history.append(
-                {
-                    "epoch": len(history) + 1,
-                    "train_loss": epoch_loss / total,
-                    "train_accuracy": correct / total,
-                    "val_loss": val_loss,
-                    "val_accuracy": val_accuracy,
-                    "lr": current_lr,
-                    "elapsed_s": round(now - train_start, 3),
-                }
+            rollout_rows, episode_rows = evaluate_clone(
+                policy=policy,
+                eval_seeds=eval_seeds,
+                max_steps=max_steps,
+                device=policy.net[0].weight.device,
+                deadline=total_deadline,
             )
+            history_row = {
+                "epoch": len(history) + 1,
+                "train_loss": epoch_loss / total,
+                "train_accuracy": correct / total,
+                "val_loss": val_loss,
+                "val_accuracy": val_accuracy,
+                "lr": current_lr,
+                "elapsed_s": round(now - train_start, 3),
+            }
+            if episode_rows:
+                write_csv(episode_metrics_path, episode_rows)
+                clone_summary = summarize_rollouts(rollout_rows, episode_rows)
+                latest_behavior = {
+                    "episodes_completed": int(clone_summary["episodes_completed"]),
+                    "return_mean": float(clone_summary["return_mean"]),
+                    "return_std": float(clone_summary["return_std"]),
+                    "action_one_rate_mean": float(clone_summary["action_one_rate_mean"]),
+                    "action_switch_rate_mean": float(clone_summary["action_switch_rate_mean"]),
+                    "return_mean_abs": abs(clone_summary["return_mean"] - reference_summary["return_mean"]),
+                    "action_switch_rate_mean_abs": abs(
+                        clone_summary["action_switch_rate_mean"] - reference_summary["action_switch_rate_mean"]
+                    ),
+                }
+                history_row["closed_loop_episodes_completed"] = latest_behavior["episodes_completed"]
+                history_row["closed_loop_return_mean"] = latest_behavior["return_mean"]
+                history_row["closed_loop_switch_delta"] = latest_behavior["action_switch_rate_mean_abs"]
+            history.append(history_row)
             if val_accuracy >= best_val_accuracy:
                 best_val_accuracy = val_accuracy
                 model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -303,6 +331,7 @@ def train_for_slice(
                         "current_lr": current_lr,
                     },
                     "history_summary": summarize_partial_history(history),
+                    "latest_behavior": latest_behavior,
                     "train_history": history,
                 },
             )
@@ -324,7 +353,7 @@ def train_for_slice(
             best_val_accuracy = val_accuracy
             model_path.parent.mkdir(parents=True, exist_ok=True)
             torch.save(policy.state_dict(), model_path)
-    return history, best_val_accuracy, forward_example_evals
+    return history, best_val_accuracy, forward_example_evals, latest_behavior
 
 
 @torch.no_grad()
@@ -461,7 +490,8 @@ def main(args: argparse.Namespace) -> None:
     optimization_forward_example_evals = 0
     eval_episode_df = pd.read_csv(args.eval_episodes_path)
     eval_seeds = [int(v) for v in eval_episode_df["seed"].tolist()]
-    train_history, best_val_accuracy, optimization_forward_example_evals = train_for_slice(
+    reference_summary = json.loads(Path(args.eval_summary_path).read_text())
+    train_history, best_val_accuracy, optimization_forward_example_evals, latest_behavior = train_for_slice(
         policy=policy,
         optimizer=optimizer,
         loss_fn=loss_fn,
@@ -481,30 +511,18 @@ def main(args: argparse.Namespace) -> None:
         metrics_path=metrics_path,
         comparison_path=comparison_path,
         model_path=model_path,
+        episode_metrics_path=Path(args.episode_metrics_path),
         history=train_history,
         best_val_accuracy=best_val_accuracy,
         forward_example_evals=optimization_forward_example_evals,
+        eval_seeds=eval_seeds,
+        max_steps=args.max_steps,
+        reference_summary=reference_summary,
     )
-    latest_rollout_rows: list[dict] = []
-    latest_episode_rows: list[dict] = []
     if not train_history:
         raise RuntimeError("Time budget expired before clone training completed one epoch.")
-    closed_loop_evaluated = False
-    if not latest_episode_rows and time.perf_counter() < total_deadline:
-        latest_rollout_rows, latest_episode_rows = evaluate_clone(
-            policy=policy,
-            eval_seeds=eval_seeds,
-            max_steps=args.max_steps,
-            device=device,
-            deadline=total_deadline,
-        )
-    if latest_episode_rows:
-        closed_loop_evaluated = True
-        write_csv(Path(args.episode_metrics_path), latest_episode_rows)
-        clone_summary = summarize_rollouts(latest_rollout_rows, latest_episode_rows)
-    else:
-        clone_summary = {"episodes_completed": 0}
-    reference_summary = json.loads(Path(args.eval_summary_path).read_text())
+    closed_loop_evaluated = latest_behavior is not None
+    clone_summary = latest_behavior if latest_behavior is not None else {"episodes_completed": 0}
     comparison = {
         "device": str(device),
         "time_budget_s": args.time_budget_s,
@@ -538,12 +556,8 @@ def main(args: argparse.Namespace) -> None:
         "clone": clone_summary,
         "deltas": (
             {
-                "return_mean_abs": abs(clone_summary["return_mean"] - reference_summary["return_mean"]),
-                "return_std_abs": abs(clone_summary["return_std"] - reference_summary["return_std"]),
-                "length_mean_abs": abs(clone_summary["length_mean"] - reference_summary["length_mean"]),
-                "length_std_abs": abs(clone_summary["length_std"] - reference_summary["length_std"]),
-                "action_one_rate_mean_abs": abs(clone_summary["action_one_rate_mean"] - reference_summary["action_one_rate_mean"]),
-                "action_switch_rate_mean_abs": abs(clone_summary["action_switch_rate_mean"] - reference_summary["action_switch_rate_mean"]),
+                "return_mean_abs": clone_summary["return_mean_abs"],
+                "action_switch_rate_mean_abs": clone_summary["action_switch_rate_mean_abs"],
             }
             if closed_loop_evaluated
             else None

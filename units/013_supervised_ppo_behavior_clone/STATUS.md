@@ -19,7 +19,7 @@
 - As of April 23, 2026, the timed training loop no longer stops early on high validation accuracy; timed slices now run to the allotted wall-clock budget unless killed externally.
 - As of April 23, 2026, the unit writes inspectable progress snapshots during dataset, training, and evaluation stages instead of waiting until process exit.
 - As of April 23, 2026, the supervised optimizer uses `AdamW` with a linear-warmup cosine-decay learning-rate schedule instead of a fixed learning rate.
-- As of April 23, 2026, training now runs continuously, validation is probed every configurable `val_interval_s`, and the full wall-clock budget is used for optimization by default rather than reserving an in-run tail for closed-loop evaluation.
+- As of April 23, 2026, training now runs continuously, validation is probed every configurable `val_interval_s`, and each validation event also runs a closed-loop behavior probe on the latest checkpoint.
 
 ## Verification
 
@@ -60,6 +60,11 @@
   - latest checkpoint validation accuracy `1.0000`
   - closed-loop return mean `482.75`
   - action-switch-rate mean delta vs PPO `0.0154`
+- Behavior-in-validation verification on April 23, 2026 confirmed that validation checkpoints now include rollout metrics:
+  - `20s` total run with `val_interval_s=5`
+  - latest checkpoint validation accuracy `1.0000`
+  - latest closed-loop return mean `417.8`
+  - `closed_loop_evaluated=true` in the final metrics snapshot
 
 ## Artifacts
 
@@ -72,5 +77,5 @@
 
 ## Next Steps
 
-- Run longer bounded slices under the new `val_interval_s` setup so convergence can be judged from the saved validation curve, then run closed-loop evaluation as a separate step when needed.
+- Run longer bounded slices under the new `val_interval_s` setup and judge convergence from both the validation curve and the in-flight closed-loop behavior probes.
 - Compare this baseline against Unit 14 as the fair same-dataset optimizer comparison.
