@@ -4,6 +4,6 @@ __pycache__/
 .venv/
 venv/
 *.pyc
-units/**/run_status.json
-units/**/model/runs/
-units/**/plot/runs/
+unit_based/units/**/run_status.json
+unit_based/units/**/model/runs/
+unit_based/units/**/plot/runs/

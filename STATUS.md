@@ -3,7 +3,7 @@
 ## Current State
 
 - `main` is a fresh restart branch as of April 22, 2026.
-- Prior exploratory work has been reintroduced as rerunnable research units under `units/`.
+- Prior exploratory work has been reintroduced as rerunnable research units under `unit_based/units/`.
 - `005_mnist_minimal_pytorch` is a minimal PyTorch port of the old `../ai_research/projects/dl_classify_mnist` project, keeping compressed MNIST data and a standalone script instead of the old Lightning/Hydra/W&B stack.
 - `006_cartpole_dynamic_network_reward_ga` is a minimal dynamic-topology network port targeting the same CartPole reward task as Unit 1; the verified single-seed run reached best reward `500.00`, final mean `446.02`, and peak mean `491.93`.
 - `007_cartpole_dynamic_gpu_ga` restores a GPU-batched dynamic-network path with Gymnasium vector envs on CPU and Torch population compute on the AMD ROCm GPU; a 6-second timed run saved metrics through generation 13 and reached peak mean reward `493.875`.
@@ -15,7 +15,7 @@
 - `013_experiment_runtime_tooling` archives the executable background-run and status-polling tooling that later convergence studies depend on.
 - `014_supervised_ppo_behavior_clone` is the first plain behavior-cloning baseline; an initial smoke run reached best validation action accuracy `0.9769` but only `469.0` mean closed-loop return over `3` completed benchmark seeds, already showing a gap between action fit and rollout behavior.
 - `015_ga_ppo_action_clone` is the GA counterpart to Unit 14; an initial smoke run reached best validation action accuracy `0.9846` and `500.0` mean closed-loop return over `7` completed benchmark seeds while still differing from PPO on action-switch rate.
-- The repo now supports two implementation modes: the established successive unit-based workflow, and a new one-shot workflow where the user writes a large prompt/spec and Codex rewrites the implementation in one pass to minimize technical debt.
+- The repo now supports two implementation modes: the established successive unit-based workflow under `unit_based/units/`, and a new one-shot workflow where the user writes a large prompt/spec and Codex rewrites the implementation in one pass to minimize technical debt.
 - A fairer same-dataset rerun now exists for Units 14 and 15: both used the same frozen PPO dataset and the same `6s` optimization cap. Under that setup, Unit 14 reached `0.9974` validation accuracy and `490.0` mean closed-loop return over `2` completed benchmark seeds, while Unit 15 reached `0.9820` validation accuracy and `500.0` mean closed-loop return over `6` completed benchmark seeds. The GA consumed far more forward evaluations, so wall-clock fairness currently favors outcome comparison more than FLOP fairness.
 - Units 14 and 15 were repaired on April 23, 2026 for proper convergence slices: Unit 14 no longer stops early on high validation accuracy, and both units now use robust unit-local / absolute default paths that survive detached background launches.
 - Units 14 and 15 now also flush inspectable progress snapshots mid-run, so convergence/status checks no longer have to wait for process exit to see useful state.
@@ -30,11 +30,11 @@
 - The user wants high-level, complete project direction while Codex handles implementation details under the hood.
 - The user does not want to read repo files; chat is the only expected user interface.
 - Repo docs are the durable memory for preferences, decisions, experiment results, constraints, artifacts, and next steps.
-- `STATUS.md` is the main handoff doc for fresh sessions; relevant unit-local docs under `units/` are secondary handoff docs when applicable.
+- `STATUS.md` is the main handoff doc for fresh sessions; relevant unit-local docs under `unit_based/units/` are secondary handoff docs when applicable.
 - Durable docs should stay small, deletion-first, and split by stability: keep long-lived operating rules and foundations in shared docs, current truth and next decisions in `STATUS.md`, and experiment-specific or likely-to-age details inside the relevant unit docs.
 - Experiments and datasets should remain rerunnable/reusable, usually by archiving unit-specific code/data/results, but active work should not carry backwards-compatibility burden.
-- Mutable executable code should not live outside `units/`; repo-root docs are fine to keep shared, but runnable code that affects experiment replay should live in a numbered unit so later edits cannot silently change archived reruns.
-- Archived research units should use numbered folders like `XXX_name`.
+- Mutable unit-based executable code should not live outside `unit_based/units/`; repo-root docs are fine to keep shared, but runnable code that affects experiment replay should live in a numbered unit so later edits cannot silently change archived reruns.
+- Archived unit-based research units should use numbered folders like `XXX_name` under `unit_based/units/`.
 - Units with plotted outputs should write those outputs under their own `plot/` folder; no-plot units should not create a `plot/` folder.
 - Before building a new experiment, default to a rewrite plus archive rather than extending the current code. Reuse/extension is the exception and should happen only when there is substantial overlap such that a rewrite would mostly recreate the same code.
 - One-shot work is prompt/spec driven: after a one-shot implementation, modifications are allowed, but the preferred long-term loop is to update the large prompt/spec with whatever was underspecified and then re-one-shot the whole implementation instead of preserving accumulating technical debt.

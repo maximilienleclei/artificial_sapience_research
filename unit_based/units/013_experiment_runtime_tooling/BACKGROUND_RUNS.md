@@ -4,7 +4,7 @@ Background runs are allowed in this repo when they improve responsiveness, but t
 
 The executable workflow code for this pattern now lives in:
 
-- `units/013_experiment_runtime_tooling/code/`
+- `unit_based/units/013_experiment_runtime_tooling/code/`
 
 ## Goals
 

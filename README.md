@@ -2,4 +2,4 @@
 
 Fresh restart branch for artificial wisdom research.
 
-Rerunnable research units live under `units/`.
+Rerunnable unit-based research work lives under `unit_based/units/`.

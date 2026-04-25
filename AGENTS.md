@@ -4,12 +4,12 @@
 2. Treat repo docs as durable memory. Anything important enough to survive a session must be written down, not just acknowledged in chat.
 3. The user wants to operate at a high level: report goals, results, constraints, and next decisions; keep implementation details under the hood unless asked.
 4. The user does not want to read repo files. Communicate all user-facing state, decisions, and summaries through chat; repo docs are for agent continuity.
-5. After any meaningful change, update the handoff docs so a new agent can quickly understand current experiments, decisions, results, constraints, artifacts, and next steps. In this repo, the main handoff doc is `STATUS.md`; relevant unit-local docs under `units/` are secondary handoff docs when applicable.
+5. After any meaningful change, update the handoff docs so a new agent can quickly understand current experiments, decisions, results, constraints, artifacts, and next steps. In this repo, the main handoff doc is `STATUS.md`; relevant unit-local docs under `unit_based/units/` are secondary handoff docs when applicable.
 6. After any meaningful verified codebase or workflow change, stage and commit it by default unless the user explicitly says not to commit yet.
 7. Preserve experiments so they can be rerun, but do not burden active work with backwards compatibility.
 8. Before implementing a new experiment, default to rewriting the codebase for that experiment and archiving the previous codebase. Only extend an existing codebase when there is substantial overlap such that a rewrite would mostly recreate the same code.
-9. Organize archived research units as numbered folders named like `XXX_name`, and treat the repo as an evolving archive of unit-specific code/data/results with the current branch optimized for the active experiment.
-10. Do not keep mutable executable experiment code outside `units/`. Repo-root `.md` files may stay shared, but any code that affects reruns must live in a numbered unit so later edits do not silently change archived reruns.
+9. Organize archived unit-based research units as numbered folders named like `XXX_name` under `unit_based/units/`, and treat the repo as an evolving archive of unit-specific code/data/results with the current branch optimized for the active experiment.
+10. Do not keep mutable executable unit-based experiment code outside `unit_based/units/`. Repo-root `.md` files may stay shared, but any code that affects unit reruns must live in a numbered unit so later edits do not silently change archived reruns.
 11. Expect the user to work across multiple machines. Record machine-specific environment facts, but do not assume one GPU or Python stack is permanent.
 12. For archived units, put generated plots and plot-adjacent metrics in that unit's `plot/` folder; units without plots should not have a `plot/` folder.
 13. Keep handoff docs future-useful and deletion-first: preserve only information that still affects future decisions, reproducibility, constraints, artifact discovery, or user preferences, and prune stale process history or temporary housekeeping.
