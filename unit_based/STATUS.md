@@ -15,7 +15,6 @@
 - `013_experiment_runtime_tooling` archives the executable background-run and status-polling tooling that later convergence studies depend on.
 - `014_supervised_ppo_behavior_clone` is the first plain behavior-cloning baseline; an initial smoke run reached best validation action accuracy `0.9769` but only `469.0` mean closed-loop return over `3` completed benchmark seeds, already showing a gap between action fit and rollout behavior.
 - `015_ga_ppo_action_clone` is the GA counterpart to Unit 14; an initial smoke run reached best validation action accuracy `0.9846` and `500.0` mean closed-loop return over `7` completed benchmark seeds while still differing from PPO on action-switch rate.
-- The repo now supports two implementation modes: the established successive unit-based workflow under `unit_based/units/`, and a new one-shot workflow where the user writes a large prompt/spec and Codex rewrites the implementation in one pass to minimize technical debt.
 - A fairer same-dataset rerun now exists for Units 14 and 15: both used the same frozen PPO dataset and the same `6s` optimization cap. Under that setup, Unit 14 reached `0.9974` validation accuracy and `490.0` mean closed-loop return over `2` completed benchmark seeds, while Unit 15 reached `0.9820` validation accuracy and `500.0` mean closed-loop return over `6` completed benchmark seeds. The GA consumed far more forward evaluations, so wall-clock fairness currently favors outcome comparison more than FLOP fairness.
 - Units 14 and 15 were repaired on April 23, 2026 for proper convergence slices: Unit 14 no longer stops early on high validation accuracy, and both units now use robust unit-local / absolute default paths that survive detached background launches.
 - Units 14 and 15 now also flush inspectable progress snapshots mid-run, so convergence/status checks no longer have to wait for process exit to see useful state.
@@ -30,14 +29,13 @@
 - The user wants high-level, complete project direction while Codex handles implementation details under the hood.
 - The user does not want to read repo files; chat is the only expected user interface.
 - Repo docs are the durable memory for preferences, decisions, experiment results, constraints, artifacts, and next steps.
-- `STATUS.md` is the main handoff doc for fresh sessions; relevant unit-local docs under `unit_based/units/` are secondary handoff docs when applicable.
+- `unit_based/STATUS.md` is the main handoff doc for this workflow; relevant unit-local docs under `unit_based/units/` are secondary handoff docs when applicable.
 - Durable docs should stay small, deletion-first, and split by stability: keep long-lived operating rules and foundations in shared docs, current truth and next decisions in `STATUS.md`, and experiment-specific or likely-to-age details inside the relevant unit docs.
 - Experiments and datasets should remain rerunnable/reusable, usually by archiving unit-specific code/data/results, but active work should not carry backwards-compatibility burden.
 - Mutable unit-based executable code should not live outside `unit_based/units/`; repo-root docs are fine to keep shared, but runnable code that affects experiment replay should live in a numbered unit so later edits cannot silently change archived reruns.
 - Archived unit-based research units should use numbered folders like `XXX_name` under `unit_based/units/`.
 - Units with plotted outputs should write those outputs under their own `plot/` folder; no-plot units should not create a `plot/` folder.
 - Before building a new experiment, default to a rewrite plus archive rather than extending the current code. Reuse/extension is the exception and should happen only when there is substantial overlap such that a rewrite would mostly recreate the same code.
-- One-shot work is prompt/spec driven: after a one-shot implementation, modifications are allowed, but the preferred long-term loop is to update the large prompt/spec with whatever was underspecified and then re-one-shot the whole implementation instead of preserving accumulating technical debt.
 - Experiments should default to explicit wall-clock budgets, with elapsed wall-clock time as the default stop contract and optimization using the full budget unless the user asks for another split or stop rule. Generations, epochs, iterations, and steps are secondary caps or reporting details.
 - Every shell/tool execution should use an explicit finite timeout by default. For bounded runs, the wall-clock cap must apply from process launch via an OS-level hard kill/watchdog plus any internal deadline, and startup/loading/teardown all count toward the budget unless the user says otherwise.
 - Time-bounded runs are safety slices, not convergence claims. Judge convergence across repeated bounded slices and saved curves, not from one capped run.
@@ -56,5 +54,4 @@
 - Separate optimization budget from evaluation budget in the next comparison pass so benchmark coverage is matched cleanly while keeping the same frozen dataset.
 - For convergence studies, continue optimization in repeated bounded slices and decide convergence from the saved curves rather than from one slice length.
 - If background runs are used for convergence studies, keep them one-at-a-time by default and promote outputs to canonical unit artifacts only after the run is complete and checked.
-- Decide per new effort whether it belongs in the unit-based workflow or the one-shot workflow, and keep the selected mode explicit in chat and handoff docs.
 - Keep per-machine GPU/Python setup notes current as machines are used.
