@@ -1,1 +1,0 @@
-"""Artificial wisdom research package."""

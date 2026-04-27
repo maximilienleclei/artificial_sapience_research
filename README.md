@@ -1,5 +1,5 @@
 # artificial_wisdom_research
 
-Fresh restart branch for artificial wisdom research.
+Main branch for one-shot artificial wisdom research work.
 
-Rerunnable unit-based research work lives under `unit_based/units/`.
+The old successive-unit workflow is preserved on the `unit_based` branch.
