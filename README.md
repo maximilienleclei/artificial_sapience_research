@@ -43,18 +43,53 @@ In this paradigm, data is retrograded to regularizing and the representation spa
 
 X Relative downsides of evolutionary algorithms
 
+Because data is now indirect with respect to representation space formation, data-originating information is encoded into the representation space at a much slower pace.
+
+Realistically, this means that we should extract all of the information available through gradient-based methods so that we do not need to do it with evolution
+
+X Orchestrating evolutionary algorithms is quite different from orchestrating gradient-based methods.
+
+Be
+
 X Opportunity to combine gradient-based methods and evolutionary algorithms
 
 
 —
 
-X Orchestrating evolutionary algorithms is quite different from orchestrating gradient-based methods.
 
-X Generative Adversarial Evolution vs Action prediction
+X Generative Adversarial Evolution + Network sharing vs Action prediction
+
+Paper 2
+
+Several key differences:
+Instead of having two separate populations of generator and discriminator agents, we now have a single population of agents that are both generator and discriminator. Their model is shared, including the output space (meaning that when generating, an agent has access to it discrimination output and vice versa)
+Instead of a single agent match per iteration, we now run k matches. The default k=3.
 
 X Neural networks of dynamic complexity
 
+X All representational capacity in the architecture
+
+Network connections do not have weights. Instead, 
+they simply sum the outputs of each neuron that they input, feed it through a per-neuron running standardization and output that transformed signal
+
+Each neuron computes a sum of all 
+
 X Generational inheritance
+
+Paper 3 extract phrasing
+
+In the context of evolutionary adversarial generation, generator memory is straightforward to 
+
+X Evolved network on top of gradient-based network
+
+Modern AI policy network
+Then have a network evolve akin to a parasite.
+Starts by mapping from the output space back into the output space
+Can start to go fetch from earlier layers after a certain point
+
+X Mutator role
+
+Agents are now also able to mutate themselves. In order to do so, they input from network
 
 X Objective: show that evolutionary algorithms can extract untapped value on top of gradient-based methods
 
