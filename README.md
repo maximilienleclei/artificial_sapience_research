@@ -2,76 +2,64 @@
 
 ===
 
-This research codebase is meant to bring to light various results that confirm the validity of several hypotheses that we propose below. In an ideal world, each of these hypotheses ought to be carefully examined independently and potentially disproven before attempting such a venture. Several findings have however been made XXX. We are however short on time and are thus taking a leap of faith: building on top of the combination of each of these hypotheses.
+This research codebase is an attempt to bring to light various novel results emanating from an interplay of hypotheses that we describe below.
+
+We have generated several peer-reviewed findings that relate to these hypotheses. They are available to consult at `articles/`.
+
+—
+
+In an ideal world, each of these described hypotheses ought to further be carefully examined, both independently and in incremental relation to each other, before attempting such a venture.
+
+We are however short on time and resources. We are thus taking a “leap of faith” and placing my trust on the many years of thought experiments that we have done on these hypotheses, hoping that it can fill that experimentation gap.
 
 ===
 
-Core hypothesis
+
+Modern AI systems are conceived using only a small subset of all computational methods.
+
+For instance, while the realm of computational search/optimization methods is vast, we only find gradient-based optimization methods in the aforementioned systems.
+
+We can thus deduce that value has been more readily attainable in focusing on this narrow subset of techniques.
+
+The research community is however uncertain about the value reach that the current research efforts are to yield.
+
+We hypothesize that various pockets of value are hardly reachable.
 
 —
 
-Modern AI systems are conceived using optimization techniques that are purely gradient-based.
+There is, in gradient-based optimization, a very tight coupling to the data distribution.
 
-In that paradigm, statistics of the data distribution are funneled into the models’ representation space.
+In that paradigm, computational information of the data distribution is funneled directly into the models’ representation space.
 
+Our core hypothesis is that there is untapped value in leaving the search/optimization room to explore beyond the confines of data space.
 
-Our core hypothesis is that there is untapped valuable information that cannot be inferred from data using gradient-based methods, because these methods are too tightly coupled to the data distribution.
+This hypothesis is rooted in the real world observation that creativity often emerges from unpopular/unconventional trajectories.
 
-—
+Our best bet to execute this vision are evolutionary algorithms.
 
-There exist many computational methods. Each of these methods make assumptions. These assumptions range from undeniable mathematical foundations to highly personal predictions.
-
-We believe that much of the untapped valuable information is to be found in *each* of these computational methods.
-
-—
-
-We however believe that because of the disconnect between the computational world and the world wherein these assumptions originate from, it is relatively too hard to 1) predict how much of the untapped valuable information is available in said method and 2) extract said information.
+In this paradigm, data is retrograded to regularizing and the representation space is now perturbed using random search.
 
 —
 
-The computational method that makes the least amount of assumptions is total random search.
+X Relative downsides of evolutionary algorithms
 
-Theoretically, it is the computational method that can yield the most untapped valuable information by virtue of searching over the superset of all other computational methods.
-
-However, because total random space is infinitely large, it is practically impossible to yield value past a certain dimensionality.
-
-
-
-—
-
-A middle ground 
-Evolutionary algorithms, methods that constrain the random search to the proximity of the data distribution, offer a sort of middle-ground.
-
-We thus derive the hypothesis that evolutionary algorithms are the best blanket insurance policy 
-
-—
-
-
-We thus make the *very unpopular* bet that random search with carefully picked and baked in assumptions is a more scalable approach to yield untapped valuable information than the other computational methods that are built on top of assumptions. 
-
-—
-
-
-Because random space is infinitely large, pure random search is unlikely to yield value. 
-
+X Opportunity to combine gradient-based methods and evolutionary algorithms
 
 
 —
 
+X Orchestrating evolutionary algorithms is quite different from orchestrating gradient-based methods.
 
+X Generative Adversarial Evolution vs Action prediction
 
+X Neural networks of dynamic complexity
 
-—
+X Generational inheritance
 
-Orchestrating evolutionary algorithms is quite different from orchestrating gradient-based methods.
+X Objective: show that evolutionary algorithms can extract untapped value on top of gradient-based methods
 
+	X Attempt showing in the context of static policy behaviour imitation, however it is likely
+	that there is too little value left to extract.
 
+	We have a dataset of human 
 
-XXX
-
-In the context of researching how to increase the chances of yielding that “valuable” information using evolutionary algorithms, we have several
-
-We then have several lower-level hypotheses. These hypotheses are 
-
-1. 
-XXX
