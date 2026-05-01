@@ -1,19 +1,19 @@
-# Overview
+# Introduction
 ## Premise
 We see intelligence as the raw ability to solve problems. In contrast, we see wisdom as the ability to create and leverage high-order information in order to calibrate problem solving.
 
 This repository constitutes our attempt to imbue AI systems with more of what we consider wisdom.
 
-At the present stage (2026/05), this repository is geared towards previously unextracted human behaviour characteristics out of human behaviour datasets, through an exotic interplay of computational methods.
+At the present stage (2026/05), this repository is geared towards drawing previously unextracted human behaviour characteristics out of human behaviour datasets, through an exotic interplay of computational methods.
 ## Strategy
-### Introduction & motivation
-Our belief is that, in practice, several conditions need to all be met in order for this extraction to start showing visible signs of success: imitation of human behaviour in its purest possible form, proper calibration of random search conditioned on gradient-based representations, etc (extensive details in later sections).
+### Motivation
+Our belief is that, in practice, several conditions need to all be met in order for this extraction to start showing visible signs of success: imitation of human behaviour in its complete form, proper calibration of random search conditioned on gradient-based representations, etc (extensive details in later sections).
 
 In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of these methods have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
 
 In order to account for time constraints, we will thus be taking the (somewhat) measured “leap of faith” of betting on years of conceptual design and experimentation directed towards this very purpose.
-### Overview
-We provide, later in this document, 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) the baselines to compare against; 2) a proposed rough path for experimentation.
+### Outline
+We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) the baselines to compare against; 2) a proposed rough path for experimentation.
 
 These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the full desired apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that very well could be required in order to successfully combine all of these methods together.
 ## Central hypotheses
@@ -30,7 +30,7 @@ In our perspective, wisdom as it appears in humanity is an extremely advanced pr
 
 We thus believe that our best bet at embedding wisdom into computational systems is through the betterment of human behaviour imitation modeling.
 
-In our opinion, many organic life forms and their societies do show signs of wisdom, but their behaviour is practically harder to collect digitally.
+In our opinion, many organic life forms and their societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
 ### Random search as a missing component
 #### Current paradigm
 We observe that, over the past ~15 years, AI research has largely focused on exploring a wide range of priors within a gradient-based optimization dominated framework.
@@ -47,17 +47,17 @@ When we do have a dataset to draw information from however, it becomes natural t
 #### Main constraints & remediations
 From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
 
-We introduce what we consider to be the two of these conditions and how we think best to approach them.
+We introduce what we consider to be the two of these conditions, and how we think best to approach them.
 ##### The indirect influence of data
 Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information is incorporated into representation space at a much slower, less efficient and noisier pace.
 
 We propose to mitigate this phenomenon by building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
 ##### Navigating random space
-Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is unsuitable noise.
+Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is undesired noise.
 
 We thus need to calibrate our algorithm to satisfy a delicate balance between representation construction and noise application.
 
-In the pursuit of that interest, we later describe neural networks whose representation capacity is, relative to modern methods, no longer encoded in optimizable parameters.
+In the pursuit of that interest, we describe neural networks that we design for that balance.
 # Specification sheet (in progress)
 ## Data
 We make use of the following data setups, that are incrementally better fits to the goal of imitating human behaviour:
