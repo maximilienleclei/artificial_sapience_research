@@ -11,9 +11,9 @@ Our belief is that, in practice, several conditions need to all be met in order 
 
 In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of these methods have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
 
-In order to account for time constraints, we will thus be taking the (somewhat) measured “leap of faith” of betting on years of conceptual design and experimentation directed towards this very purpose.
+In order to account for time constraints, we will be taking the (somewhat) measured “leap of faith” of betting on years of conceptual design and experimentation directed towards this very purpose.
 ### Outline
-We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) the baselines to compare against; 2) a proposed rough path for experimentation.
+We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) baselines to compare against; and 2) a proposed rough path for experimentation.
 
 These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the full desired apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that very well could be required in order to successfully combine all of these methods together.
 ## Central hypotheses
@@ -28,9 +28,11 @@ In the pursuit of designing systems that exhibit wisdom, it appears that one has
 
 In our perspective, wisdom as it appears in humanity is an extremely advanced product of evolution. As a result, we consider it naive to practically hope for success from anything that distances itself from pure imitation of existing behaviour.
 
-We thus believe that our best bet at embedding wisdom into computational systems is through the betterment of human behaviour imitation modeling.
+We thus believe that our best bet at embedding wisdom into computational systems is through the betterment of human behaviour imitation modeling*.
 
-In our opinion, many organic life forms and their societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
+We propose to take a shot at that problem from different angles: collaborative adversarial imitation, unfiltered behaviour over time. etc.
+
+* In our opinion, many organic life forms and their societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
 ### Random search as a missing component
 #### Current paradigm
 We observe that, over the past ~15 years, AI research has largely focused on exploring a wide range of priors within a gradient-based optimization dominated framework.
@@ -39,25 +41,23 @@ Gradient-based optimization methods are tightly coupled to the data distribution
 #### Proposed extension
 Our hypothesis is that, given our non-omniscience, meaningful value remains unextracted when search and optimization are constrained to prior and data space.
 
-We thus argue for the need to augment the optimization process through the exploration of random space.
+We argue for the need to augment the optimization process through the exploration of random space.
 
 The most popular random space exploration method is perhaps random search. It is an optimization method that is employed when we 1) do not have the necessary priors to successfully solve a task and 2) do not have a dataset to draw information from.
 
-When we do have a dataset to draw information from however, it becomes natural to turn towards evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role in constraining this exploration.
+When we do have a dataset to draw information from however, it becomes natural to turn to evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role in constraining this exploration.
 #### Main constraints & remediations
 From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
 
 We introduce what we consider to be the two of these conditions, and how we think best to approach them.
 ##### The indirect influence of data
-Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information is incorporated into representation space at a much slower, less efficient and noisier pace.
+Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information now gets assimilated into representation space at a much slower, less efficient and noisier pace.
 
 We propose to mitigate this phenomenon by building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
 ##### Navigating random space
 Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is undesired noise.
 
-We thus need to calibrate our algorithm to satisfy a delicate balance between representation construction and noise application.
-
-In the pursuit of that interest, we describe neural networks that we design for that balance.
+We thus need to calibrate our search to satisfy a delicate balance between representation construction and noise application. In the pursuit of that interest, we propose neural networks that we design for that balance.
 # Specification sheet (in progress)
 ## Data
 We make use of the following data setups, that are incrementally better fits to the goal of imitating human behaviour:
@@ -84,25 +84,41 @@ Full subject behaviour
 ### Standard deep learning
 dw
 ### Neuroevolution
-#### Overview
-The proposed evolutionary algorithm is an island-ba genetic algorithm that maintains a population of a fixed number (N) of agents.
+#### Core design
+##### Introduction
+The proposed evolutionary algorithm is an island-based genetic algorithm.
 
-Each agent has three distinct roles: generator, discriminator and mutator.
+It maintains a population of a fixed number `pop_size` of agents.
+There are `num_islands` islands, each composed of the same `island_size` (`pop_size / num_islands`) number of agents.
 
+Each agent has three distinct roles: generator, discriminator and mutator (more details below).
 
+The algorithm loops every iteration through three stages: perturbation, evaluation and selection.
+The generation of agents at iteration `<iter>` is `gen <iter>`.
+
+During the perturbation stage, all agents are randomly mutated (no crossovers).
+During the evaluation stage, all agents are quantitatively graded with a fitness on the given task.
+##### Selection
+Selection for both the islands and the population is achieved using 50% truncation selection.
+
+This corresponds to ranking agents by fitness score, discarding the bottom 50% of agents and duplicating the top 50% of agents (to put it in illustrated language terms: selected agents become parents, produce two offsprings, and erase themselves).
+
+Per-island selection occurs every iteration. Every `island_merge_freq` iterations, the global population is ranked and 50% truncation selection occurs. New islands are then formed using the selected population at random.
 #### Generational inheritance
+Generational inheritance is a key component to make evolutionary search more efficient with respect to evaluation.
 
+Its main purpose is to enable structure such that we can evolve over a desired evaluation time frame, no more no less.
 
-Generational inheritance is key in making evolutionary search more efficient.
+In that framework, agents that are selected transfer to their two offspring not only their genotype but also their final environment state, final memory state, and cumulative lineage fitness scores.
 
-In that framework, agents that make it through the selection stage transfer not only their genotype, as is common practice, but also their final environment state, final memory state, and cumulative lineage fitness to their offspring.
+During its own evaluation stage, the offspring thus slots in its parent’s memory state and resumes from its parent’s environment state. Its fitness score becomes the sum of the lineage fitness score and its own. The selection stage then accounts for that sum rather than the individual’s fitness.
 
-Then, during its own evaluation stage, the offspring resumes from its parent’s stored nonterminal environment state, final memory state, and starts with inherited fitness equal to the parent’s cumulative lineage fitness.
-
-The child is evaluated for E actions, accumulating local reward. If termination occurs before E is exhausted under fixed E=k, reset the environment and use the remaining actions; otherwise descendants of terminal agents start from a fresh environment. After evaluation, store the child’s final env state and memory state, and set fitness = inherited fitness + local reward. Selection is based on this cumulative fitness.
-
+The child is evaluated for `num_states` states, accumulating local reward. If termination occurs before E is exhausted under fixed E=k, reset the environment and use the remaining actions; otherwise descendants of terminal agents start from a fresh environment. After evaluation, store the child’s final env state and memory state, and set fitness = inherited fitness + local reward. Selection is based on this cumulative fitness.
 #### Adversarial imitation
-We now explain the generator and discriminator roles.
+We now explain the generator and discriminator roles introduced earlier.
+
+
+
 
 Every iteration, 
 
