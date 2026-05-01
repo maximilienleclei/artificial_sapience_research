@@ -36,7 +36,7 @@ In our opinion, many organic life forms and their societies do show signs of wis
 We observe that, over the past ~15 years, AI research has largely focused on exploring a wide range of priors within a gradient-based optimization dominated framework.
 
 Gradient-based optimization methods are tightly coupled to the data distribution, funneling information from the data directly into the model’s representation space.
-#### Proposed augmentation
+#### Proposed extension
 Our hypothesis is that, given our non-omniscience, meaningful value remains unextracted when search and optimization are constrained to prior and data space.
 
 We thus argue for the need to augment the optimization process through the exploration of random space.
@@ -44,21 +44,21 @@ We thus argue for the need to augment the optimization process through the explo
 The most popular random space exploration method is perhaps random search. It is an optimization method that is employed when we 1) do not have the necessary priors to successfully solve a task and 2) do not have a dataset to draw information from.
 
 When we do have a dataset to draw information from however, it becomes natural to turn towards evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role in constraining this exploration.
-#### Drawbacks & remediations
-From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful use quite exotic relative to modern gradient-based methods.
+#### Main constraints & remediations
+From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
 
-We introduce what we consider to be the two major conditions
-
+We introduce what we consider to be the two of these conditions and how we think best to approach them.
 ##### The indirect influence of data
+Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information is incorporated into representation space at a much slower, less efficient and noisier pace.
 
-Most popular perhaps is the practical inconvenience that emerges from the now indirect influence of data onto representation-space. This results in a slower, less efficient and noisier incorporation of valuable data information than is the case with gradient-based optimization.
+We propose to mitigate this phenomenon by building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
+##### Navigating random space
+Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is unsuitable noise.
 
-We propose to mitigate this drawback by having gradient-based methods extract large amounts of information from data a always extracting as much data information as possible using gradient-based methods before operating evolutionary search in the realm of this extracted information.
+We thus need to calibrate our algorithm to satisfy a delicate balance between representation construction and noise application.
 
-##### 
-
-A second key element is the complexity of navigating random space. With respect to our objectives, much of random space is noise.
-# Specification sheet
+In the pursuit of that interest, we later describe neural networks whose representation capacity is, relative to modern methods, no longer encoded in optimizable parameters.
+# Specification sheet (in progress)
 ## Data
 We make use of the following data setups, that are incrementally better fits to the goal of imitating human behaviour:
 
