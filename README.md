@@ -4,9 +4,9 @@ It is optimized for both human and AI agent readability.
 
 The tipping point motivation for creating this document was to fully decouple research methodology and experimentation away from a consistent codebase, which has only recently become legitimate.
 
-This document has two main sections: `overview` and `specifications`.
+This document has two main sections: `Overview` and `Specifications`.
 
-We describe, in the `overview` section, our high-level understanding and research reasoning so as to contextualize our `specifications` section.
+We describe, in the `Overview` section, our high-level understanding and research reasoning so as to contextualize our `Specifications` section.
 
 # Overview
 
@@ -22,121 +22,113 @@ Finally, in `Research strategy`, we share insights into how we operationalize ou
 
 Intelligence, wisdom and understanding are three advanced concepts that concern themselves with problem solving.
 
-Just like most high-order concepts, all these concepts have neither universally agreed definitions nor boundaries between each other.
+Just like most high-order concepts, all these concepts have neither universally agreed definitions nor clear boundaries with each other.
 
-To the best of our knowledge, sapience is the term that best englobes the three terms.
+To the best of our knowledge, sapience is the term that best englobes the three terms as they manifest in human beings.
+
+### Intelligence
+
+Our perspective is that intelligence is proportional to the likelihood of solving a given problem.
+
+There is per-problem intelligence: an entity can be very good at solving very specific problems but very bad at solving everything else. In that case, it is narrowly very intelligent.
+
+More broadly valuable however is general intelligence. Human beings for instance are able to solve a wide range of problems.
+
+### Sacrificing sapience for the sake of greater intelligence
+
+In the pursuit of increasing the likelihood of solving a given set of problems, greater intelligence is willing to forgo certain endeavours, such as 1) considering information pertaining to the greater context that the set of problems is in (wisdom) & 2) building comprehension that is not strictly required to “solve” the tasks (understanding).
 
 
 ### The artificial intelligence imbalance
 
 We believe that there is an imbalance in the world of artificial systems wherein intelligence is prioritized at the expense of the other concepts that make up sapience.
 
-This repository represents our contribution at attempting to restore this balance.
-
-### Intelligence
-
-Our perspective is that intelligence is proportional to the likelihood of solving a given problem.
-
-We make the distinction between per-problem intelligence and general intelligence.
-
-An entity can be very good at solving very specific problems but very bad at solving everything else. In that case, it is narrowly very intelligent.
-
-### Sacrificing sapience for the sake of greater intelligence
-
-In the pursuit of increasing the likelihood of solving a given problem, greater intelligence is willing to forgo certain endeavours, such as 1) information pertaining to the greater context that the problem is in & 2) comprehension that is not strictly required to “solve” the task.
-
-Point 1 pertains to wisdom while point 2 pertains to understanding.
-
-
-### The case for artificial sapience
-
-In the interest of moving from narrow/simpler problems to more general/complex problems, intelligence’s best bet is to account for an ever larger context and/or deeper comprehension of sub-problems.
-
-It thus appears that we are able to “brute-force” some amount of sapience through the pursuit of intelligence.
-
-But 
-
-
-
-
+This repository represents our attempt at a contribution to restore this balance.
 
 ## Central hypotheses
 
-### Modern AI systems & their relation with high-order information
+### Modern AI systems, wisdom & understanding
 
-While modern AI systems exhibit increasingly more advanced and efficient problem-solving in a wide range of domains, they appear, to us, limited in their ability to create and understand high-order information such as matters of the human condition, societal dynamics, spirituality etc.
+While modern AI systems exhibit increasingly more advanced and efficient problem-solving in a wide range of domains, they appear, to us, limited in their ability to create and understand certain categories of high-order information such as matters of the human condition, societal dynamics, etc.
 
 While the argument can be made that these systems are vastly different from us, it is also undeniable that they have also been exposed to an amount of information pertaining to these high-order concepts at a scale that no human has ever been, by far.
 
-It thus appears to us that wisdom and understanding are not going to emerge meaningfully from the current paradigm.
+It thus appears to us that the wisdom and understanding required to make sense of these categories of information are not going to emerge meaningfully from the present paradigm.
 
 ### The need for higher fidelity human behaviour imitation
 
 In the pursuit of designing systems that exhibit sapience, it appears to us that one has to position itself with respect to a gradient that spans from pure imitation of existing behaviour all the way to independent discovery.
 
-From our perspective, sapience as it appears in humanity is an advanced product of evolution that sits at the top of a magnificent dependency graph. As a result, we believe the chance of success to drop very sharply for anything that distances itself from pure imitation of existing behaviour.
+From our perspective, sapience as it appears in humanity is an advanced product of evolution that sits at the top of an incredibly sophisticated dependency graph. As a result, we believe the chance of success in building sapient systems to drop very sharply for anything that distances itself from pure imitation of existing behaviour.
 
-We thus believe that our best bet at embedding sapience into computational systems is through the betterment of human behaviour imitation modeling*.
+We thus believe that our best bet at embedding sapience into computational systems is through the betterment of human behaviour imitation modeling.
 
-We propose to take on this endeavour from different angles: collaborative adversarial imitation, unfiltered behaviour over time. etc.
+### Random search to better human behaviour imitation
 
-* In our opinion, many organic life forms and their emergent societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
-
-### Random search as a missing component
-
-#### Current paradigm
+#### Current AI paradigm
 
 We observe that, over the past ~15 years, AI research has largely focused on exploring a wide range of priors within a gradient-based optimization dominated framework.
 
 Gradient-based optimization methods are tightly coupled to the data distribution, funneling information from the data directly into the model’s representation space.
 
-#### Proposed extension
+#### Random search as an extension
+
+From our perspective there are three categories of spaces that problem-solving computational methods can live in: prior, data and random space.
+
+—
+
+
+The classical random space exploration method is random search. It is an optimization method that is employed when we 1) do not have the complete priors to successfully solve a task and 2) do not have a dataset to draw information from.
+
+The classical random space exploration method when we do have a dataset that we wish to draw information from is evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role, constraining random space exploration.
+
+Inverse reinforcement learning is a class of methods that can be made to explore all three prior, data and random space. In practice however, the exploration of random space is minimal and focused on early-stage optimization.
+
+—
 
 Our hypothesis is that, given our non-omniscience, meaningful value remains unextracted when search and optimization are constrained to prior and data space.
 
-We argue for the need to augment the optimization process through the exploration of random space.
-
-The most popular random space exploration method is perhaps random search. It is an optimization method that is employed when we 1) do not have the necessary priors to successfully solve a task and 2) do not have a dataset to draw information from.
-
-When we do have a dataset to draw information from however, it becomes natural to turn to evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role in constraining this exploration.
+We thus propose to explore the interplay of prior, data and random space.
 
 #### Main constraints & remediations
 
-From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
+From our perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
 
 We introduce what we consider to be two of these conditions, and how we think best to approach them.
 
-##### The indirect influence of data
+##### Data indirectness
 
-Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information now gets assimilated into representation space at a much slower, less efficient and noisier pace.
+Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information now gets assimilated into representation space at a much slower and less efficient pace.
 
-We propose to mitigate this phenomenon by building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
+We propose to mitigate this phenomenon by largely building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
 
 ##### Navigating random space
 
-Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is undesired noise.
+Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is destructive noise.
 
-We thus need to calibrate our search to satisfy a delicate balance between representation construction and noise application. In the pursuit of that interest, we propose neural networks that we design for that balance.
+We thus need to calibrate our search to satisfy a delicate balance between representation construction and noise application.
+
+In the pursuit of that interest, we propose to explore methods that can flexibly calibrate themselves with respect to that balance.
 
 ## Research strategy
 
 ### Motivation
 
-Our belief is that, in practice, several conditions need to all be met in order for this behaviour extraction to start showing visible signs of success: imitation of human behaviour in its complete form, proper calibration of random search conditioned on gradient-based representations, etc (extensive details in later sections).
+Our belief is that, in practice, several conditions need to all be met in order to reach visible signs of deeper understanding and wisdom: imitation of human behaviour in its complete form, proper calibration of random search conditioned on gradient-based representations, etc.
 
-In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of these methods have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
+In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of the methods that we later detail have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
 
-In order to account for time constraints, we will be taking the (somewhat) measured “leap of faith” of betting on years of conceptual experimentation directed towards this very purpose.
+In order to account for time constraints, we are taking the (somewhat) measured “leap of faith” of building towards our objective while betting instead on our observed empirical results in addition to years of conceptual experimentation.
 
 ### Outline
 
-We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) baselines to compare against; and 2) a proposed rough path for experimentation.
+We provide, in the upcoming `Specifications` section of this document 1) an appropriately detailed description of all the components envisioned for the implementation of both a) the envisioned approach & b) baselines to compare against; and 2) a proposed rough path for experimentation.
 
-These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the full desired apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that very well could be required in order to successfully combine all of these methods together.
+These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that could be required in order to successfully combine all of these methods together.
 
-### Our current mission
+### Current objective
 
-At the present stage (2026/05), this repository is geared towards researching the feasibility of drawing previously unextracted human behaviour characteristics out of human behaviour datasets, through an exotic interplay of computational methods.
+At the present stage (2026/05), our research is geared towards attempting to first extract previously unextracted human behaviour characteristics out of human behaviour datasets.
 
 # Specifications
 
