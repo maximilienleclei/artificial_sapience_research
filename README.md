@@ -1,44 +1,97 @@
-# Introduction
-## Premise
-We see intelligence as the raw ability to solve problems. In contrast, we see wisdom as the ability to create and leverage high-order information in order to calibrate problem solving.
+This is a single-page, carefully sectioned markdown document that details our research at various levels of abstraction.
 
-This repository constitutes our attempt to imbue AI systems with more of what we consider wisdom.
+It is optimized for both human and AI agent readability.
 
-At the present stage (2026/05), this repository is geared towards drawing previously unextracted human behaviour characteristics out of human behaviour datasets, through an exotic interplay of computational methods.
-## Strategy
-### Motivation
-Our belief is that, in practice, several conditions need to all be met in order for this extraction to start showing visible signs of success: imitation of human behaviour in its complete form, proper calibration of random search conditioned on gradient-based representations, etc (extensive details in later sections).
+The tipping point motivation for creating this document was to fully decouple research methodology and experimentation away from a consistent codebase, which has only recently become legitimate.
 
-In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of these methods have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
+This document has two main sections: `overview` and `specifications`.
 
-In order to account for time constraints, we will be taking the (somewhat) measured “leap of faith” of betting on years of conceptual design and experimentation directed towards this very purpose.
-### Outline
-We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) baselines to compare against; and 2) a proposed rough path for experimentation.
+We describe, in the `overview` section, our high-level understanding and research reasoning so as to contextualize our `specifications` section.
 
-These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the full desired apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that very well could be required in order to successfully combine all of these methods together.
+# Overview
+
+We begin this section by sharing, in `Why artificial sapience?` our current understanding of both sapience and its relation with artificial intelligence.
+
+We then proceed, in `Central hypotheses`, to introducing and motivating several hypotheses that shape the nature of our research direction.
+
+Finally, in `Research strategy`, we share insights into how we operationalize our research endeavour.
+
+## Why artificial sapience?
+
+### Sapience
+
+Intelligence, wisdom and understanding are three advanced concepts that concern themselves with problem solving.
+
+Just like most high-order concepts, all these concepts have neither universally agreed definitions nor boundaries between each other.
+
+To the best of our knowledge, sapience is the term that best englobes the three terms.
+
+
+### The artificial intelligence imbalance
+
+We believe that there is an imbalance in the world of artificial systems wherein intelligence is prioritized at the expense of the other concepts that make up sapience.
+
+This repository represents our contribution at attempting to restore this balance.
+
+### Intelligence
+
+Our perspective is that intelligence is proportional to the likelihood of solving a given problem.
+
+We make the distinction between per-problem intelligence and general intelligence.
+
+An entity can be very good at solving very specific problems but very bad at solving everything else. In that case, it is narrowly very intelligent.
+
+### Sacrificing sapience for the sake of greater intelligence
+
+In the pursuit of increasing the likelihood of solving a given problem, greater intelligence is willing to forgo certain endeavours, such as 1) information pertaining to the greater context that the problem is in & 2) comprehension that is not strictly required to “solve” the task.
+
+Point 1 pertains to wisdom while point 2 pertains to understanding.
+
+
+### The case for artificial sapience
+
+In the interest of moving from narrow/simpler problems to more general/complex problems, intelligence’s best bet is to account for an ever larger context and/or deeper comprehension of sub-problems.
+
+It thus appears that we are able to “brute-force” some amount of sapience through the pursuit of intelligence.
+
+But 
+
+
+
+
+
 ## Central hypotheses
+
 ### Modern AI systems & their relation with high-order information
-While modern AI systems exhibit increasingly more advanced and efficient problem-solving in a wide range of domains, they appear, to us, limited in their ability to create and understand high-order information such as matters of the human condition, societal dynamics, etc.
+
+While modern AI systems exhibit increasingly more advanced and efficient problem-solving in a wide range of domains, they appear, to us, limited in their ability to create and understand high-order information such as matters of the human condition, societal dynamics, spirituality etc.
 
 While the argument can be made that these systems are vastly different from us, it is also undeniable that they have also been exposed to an amount of information pertaining to these high-order concepts at a scale that no human has ever been, by far.
 
-It thus appears to us that such wisdom is not going to naturally emerge from the current paradigm.
+It thus appears to us that wisdom and understanding are not going to emerge meaningfully from the current paradigm.
+
 ### The need for higher fidelity human behaviour imitation
-In the pursuit of designing systems that exhibit wisdom, it appears that one has to make a judgement call with respect to a gradient that spans from pure imitation of existing behaviour all the way to independent discovery.
 
-In our perspective, wisdom as it appears in humanity is an extremely advanced product of evolution. As a result, we consider it naive to practically hope for success from anything that distances itself from pure imitation of existing behaviour.
+In the pursuit of designing systems that exhibit sapience, it appears to us that one has to position itself with respect to a gradient that spans from pure imitation of existing behaviour all the way to independent discovery.
 
-We thus believe that our best bet at embedding wisdom into computational systems is through the betterment of human behaviour imitation modeling*.
+From our perspective, sapience as it appears in humanity is an advanced product of evolution that sits at the top of a magnificent dependency graph. As a result, we believe the chance of success to drop very sharply for anything that distances itself from pure imitation of existing behaviour.
 
-We propose to take a shot at that problem from different angles: collaborative adversarial imitation, unfiltered behaviour over time. etc.
+We thus believe that our best bet at embedding sapience into computational systems is through the betterment of human behaviour imitation modeling*.
 
-* In our opinion, many organic life forms and their societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
+We propose to take on this endeavour from different angles: collaborative adversarial imitation, unfiltered behaviour over time. etc.
+
+* In our opinion, many organic life forms and their emergent societies do show signs of wisdom, but their behaviour is practically quite a bit harder to turn digital.
+
 ### Random search as a missing component
+
 #### Current paradigm
+
 We observe that, over the past ~15 years, AI research has largely focused on exploring a wide range of priors within a gradient-based optimization dominated framework.
 
 Gradient-based optimization methods are tightly coupled to the data distribution, funneling information from the data directly into the model’s representation space.
+
 #### Proposed extension
+
 Our hypothesis is that, given our non-omniscience, meaningful value remains unextracted when search and optimization are constrained to prior and data space.
 
 We argue for the need to augment the optimization process through the exploration of random space.
@@ -46,20 +99,49 @@ We argue for the need to augment the optimization process through the exploratio
 The most popular random space exploration method is perhaps random search. It is an optimization method that is employed when we 1) do not have the necessary priors to successfully solve a task and 2) do not have a dataset to draw information from.
 
 When we do have a dataset to draw information from however, it becomes natural to turn to evolutionary search. In evolutionary search, the representation space is also perturbed through random search, but data now plays a regularizing role in constraining this exploration.
+
 #### Main constraints & remediations
+
 From our humble perspective, random and evolutionary search permeate several conditions that, in practice, make their successful calibration quite exotic relative to modern gradient-based methods.
 
-We introduce what we consider to be the two of these conditions, and how we think best to approach them.
+We introduce what we consider to be two of these conditions, and how we think best to approach them.
+
 ##### The indirect influence of data
+
 Given that, relative to gradient-based methods, data is retrograded from being a direct to an indirect optimization signal, valuable data information now gets assimilated into representation space at a much slower, less efficient and noisier pace.
 
 We propose to mitigate this phenomenon by building on top of the modern paradigm. In practice, this means extracting information using gradient-based methods and operating evolutionary search in the realm of this extracted information.
+
 ##### Navigating random space
+
 Perturbing representation space using random space is a delicate endeavour. With respect to our objectives, much of random space is undesired noise.
 
 We thus need to calibrate our search to satisfy a delicate balance between representation construction and noise application. In the pursuit of that interest, we propose neural networks that we design for that balance.
-# Specification sheet (in progress)
+
+## Research strategy
+
+### Motivation
+
+Our belief is that, in practice, several conditions need to all be met in order for this behaviour extraction to start showing visible signs of success: imitation of human behaviour in its complete form, proper calibration of random search conditioned on gradient-based representations, etc (extensive details in later sections).
+
+In order to meet all of these conditions, we believe that a multitude of methods need to be incorporated into a working solution. Several of these methods have, in isolation and in older forms, been scientifically peer-reviewed. However, many of them have not.
+
+In order to account for time constraints, we will be taking the (somewhat) measured “leap of faith” of betting on years of conceptual experimentation directed towards this very purpose.
+
+### Outline
+
+We provide, starting from the second section of this document 1) a specification sheet that contains an appropriately detailed description of all necessary components for the implementation of a) the envisioned approach & b) baselines to compare against; and 2) a proposed rough path for experimentation.
+
+These components are meant to provide a solid framework for a sufficiently capable AI agent to both 1) generate the full desired apparatus and 2) run extensive incremental experimentation in order to build any of the missing understanding that very well could be required in order to successfully combine all of these methods together.
+
+### Our current mission
+
+At the present stage (2026/05), this repository is geared towards researching the feasibility of drawing previously unextracted human behaviour characteristics out of human behaviour datasets, through an exotic interplay of computational methods.
+
+# Specifications
+
 ## Data
+
 We make use of the following data setups, that are incrementally better fits to the goal of imitating human behaviour:
 
 Environments:
@@ -80,12 +162,19 @@ Alternates between actions following a given pattern
 Pre-trained capable RL agent policy
 Subject “stable” behaviour (meaning we would need to find a particular time slice where behaviour statistics are “stable”)
 Full subject behaviour
+
 ## Methods
+
 ### Standard deep learning
-dw
+
+Dw
+
 ### Neuroevolution
+
 #### Core design
+
 ##### Introduction
+
 The proposed evolutionary algorithm is an island-based genetic algorithm.
 
 It maintains a single population of a fixed number `pop_size` of agents.
@@ -98,13 +187,17 @@ The generation of agents at iteration `<iter>` is `gen <iter>`.
 
 During the perturbation stage, all agents are randomly mutated (no crossovers).
 During the evaluation stage, all agents are quantitatively graded with a fitness on the given task.
+
 ##### Selection
+
 Selection for both the islands and the population is achieved using 50% truncation selection.
 
 This corresponds to ranking agents by fitness score, discarding the bottom 50% of agents and duplicating the top 50% of agents (to put it in illustrated language terms: selected agents become parents, produce two offspring, and erase themselves).
 
 Per-island selection occurs every iteration. Every `island_merge_freq` iterations, the global population is ranked and 50% truncation selection occurs. New islands are then formed using the selected population at random.
+
 #### Generational inheritance
+
 Generational inheritance is a key component to make evolutionary search more efficient with respect to evaluation.
 
 Its main purpose is to enable structure such that we can evolve over a desired evaluation time frame, no more no less.
@@ -114,11 +207,13 @@ In that framework, agents that are selected transfer to their two offspring not 
 During its own evaluation stage, the offspring thus slots in its parent’s memory state and resumes from its parent’s environment state. Its fitness score becomes the sum of the lineage fitness score and its own. The selection stage then accounts for that sum rather than the individual’s fitness.
 
 The child is evaluated for `num_states` states, accumulating local reward. If termination occurs before E is exhausted under fixed E=k, reset the environment and use the remaining actions; otherwise descendants of terminal agents start from a fresh environment. After evaluation, store the child’s final env state and memory state, and set fitness = inherited fitness + local reward. Selection is based on this cumulative fitness.
+
 #### Adversarial imitation
+
 We now explain the generator and discriminator roles introduced earlier.
 
-
-
+##### 
+#### 
 
 Every iteration, 
 
@@ -127,17 +222,33 @@ Every iteration,
 Generational inheritance is straight-forward to implement for the generator role.
 
 However it is not so straightforward for the discriminator role, given that an agent’s chile will most likely not encounter the same generator 
+
+#### Neural network
+
+$$$$$ Evolution
+
+Each agent maintains one neural network.
+
+The network is a directed graph. Structurally, the network is made up of nodes and connections.
+
+£££££ Computation 
+
+While network evolution is performed per-network, computation is batched so it can run in parallel on the GPU.
+
+The ‘3 x num_nodes’ 
+
+
 #### Neural networks evolution
-Each agent maintains one dynamic neural network. Its topology evolves alongside a small set of developmental parameters: hidden-node count, wiring pattern, local connection bias, expected grow/prune mutation counts, and the number of recurrent-style computation passes used for each input.
 
 Each network is represented as a directed graph of nodes. The population is flattened into batched tensors for evaluation, while mutation remains graph-based and sequential.
 
 ##### Graph representation
+
 The graph has three node roles:
 
-- Input nodes are non-parametric nodes that receive external observations. There is one input node per observation dimension.
+- Input nodes receive external observations. There is one input node per observation dimension.
 - Hidden nodes are mutable computational nodes. They can be added or removed by evolution. Each hidden node also has a fixed polarity, sampled uniformly at birth from `{-1, +1}`.
-- Output nodes are mutable computational nodes whose standardized values are returned as the network output. There is one output node per action/output dimension.
+- Output nodes return values from the network. There is one output node per action/output dimension.
 
 Input and output nodes are created during initialization and are permanent. Hidden nodes are grown and pruned over evolutionary time. Every node has a mutable identifier, used for tensor indexing, and an immutable identifier, used to clone and reconstruct the graph after pruning has changed mutable positions.
 
@@ -152,6 +263,7 @@ The graph maintains synchronized views of nodes by role and connection status:
 - `being_pruned`: a temporary recursion guard during cascading pruning.
 
 ##### Computation and normalization
+
 Input nodes receive observation values. Hidden and output nodes compute an unweighted sum of up to three incoming standardized node values:
 
 ```text
@@ -180,6 +292,7 @@ Output nodes do not have polarity. They return their standardized value directly
 These normalization statistics are learned network state, not episode-local hidden state. Resetting a network for a new episode therefore does not clear them.
 
 ##### Growth
+
 Initialization creates all input and output nodes. After initialization, growth creates hidden nodes.
 
 When a hidden node is grown, three connections are created:
@@ -195,11 +308,13 @@ When there are multiple candidates, sampling is graph-local: the sampler expands
 If several grow mutations happen in one mutation call, they are chained: each new hidden node becomes the starting input node for the next growth operation.
 
 ##### Pruning
+
 Pruning removes hidden nodes. Input and output nodes are never pruned.
 
 When a hidden node is pruned, its incoming and outgoing connections, standardization state, and fixed polarity are removed. Later mutable identifiers are decremented so tensor indices stay contiguous. Pruning can cascade: if another hidden node loses all incoming or outgoing connections, it is pruned as well. A temporary `being_pruned` list prevents recursive pruning loops.
 
 ##### Mutation
+
 Mutation first perturbs evolvable scalar parameters:
 
 - `avg_num_grow_mutations` is multiplied by `1 + 0.01 * randn`.
@@ -217,6 +332,7 @@ After mutation, the network regenerates computation tensors:
 Mutable nodes are ordered as output nodes first, then hidden nodes. The incoming-node index tensor and polarity tensor both use this order.
 
 ##### Batched population computation
+
 Although networks have heterogeneous topologies, the population is evaluated through one flattened tensor layout. The population-level forward call accepts `[num_nets, num_inputs]` and returns `[num_nets, num_outputs]`.
 
 Before computation, the population is converted into batched lookup tensors:
@@ -249,6 +365,7 @@ The forward pass proceeds as follows:
 The number of passes is the maximum `num_network_passes_per_input` across the population. Networks with fewer passes are masked out after their own pass count, giving networks evolvable recurrent-like depth while preserving one batched computation path.
 
 ##### Resampling and cloning
+
 Selection resamples the population by replacing each network with a clone of a selected parent. Cloning uses explicit graph serialization instead of generic deep copying because incoming/outgoing node references are circular and large evolved graphs can exceed Python's recursion limit.
 
 Serialization stores each node's role, mutable identifier, immutable identifier, hidden-node polarity where applicable, incoming immutable identifiers, running standardization state, self-adapting mutation parameters, total nodes grown, and device placement. Reconstruction first creates all nodes, then reconnects incoming edges by immutable identifier.
@@ -256,6 +373,7 @@ Serialization stores each node's role, mutable identifier, immutable identifier,
 Forward passes update the population's batched running-standardization tensor, so individual graph objects are stale during evaluation. Before mutation after a forward phase, the batched statistics are synchronized back into each network so offspring inherit the current normalization state.
 
 ##### Performance notes
+
 Mutation is performed sequentially across networks, then tensor data is cached for fast batched preparation. Multiprocessing was rejected because individual mutations were too cheap relative to inter-process communication and serialization overhead. The current approach keeps graph mutation simple and uses tensor operations for forward computation.
 
 ### Generational inheritance
@@ -281,3 +399,4 @@ X Objective: show that evolutionary algorithms can extract untapped value on top
 	We have a dataset of human 
 
 ## Experimentation path
+
