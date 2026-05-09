@@ -425,9 +425,9 @@ Each node also maintains a list of `out` nodes`: nodes that the given node conne
 
 Nodes do not assign weights to the values they receive, nor do they apply a bias.
 
-All nodes (including `input` nodes) run an online Welford’s algorith standardization of the sum of their input values using Welford's online algorithm, and output the result of that standardization.
+All nodes (including `input` nodes) run an online Welford’s algorithm standardization of the sum of their input values using Welford's online algorithm, and output the result of that standardization.
 
-##### Network overview
+##### Network architecture
 
 There are `n` `input` nodes, corresponding to the `n` real values that the network inputs. Input nodes only input their assigned real value input.
 
@@ -435,7 +435,75 @@ There are `n` `input` nodes, corresponding to the `n` real values that the netwo
 
 There are `m` `output` nodes, corresponding to the `m` real values that the network outputs.
 
+
+##### Parameters
+
+
+
+###### Overview
+
+Each network maintains its own set of these 4 mutable parameters:
+- `avg_num_grow_mutations`, float, x >= 0
+- `avg_num_prune_mutations`, float, x >= 0
+- `num_network_passes_per_input`, int, x >= 1
+- `local_connectivity_probability`, float, x >= 0, x <= 1
+
+We decide to make these parameters mutable because we believe we do not have good global heuristics to set them properly ourselves.
+
+
+###### `avg_num_grow_mutations` & `avg_num_prune_mutations`
+
+The `avg_num_grow_mutations` and `avg_num_prune_mutations` values control how much growing and pruning randomly occurs.
+
+We create these parameters in order to give the evolutionary search the flexibility to control the average occurrence of both mutations.
+
+We believe this to be valuable because different stages of the evolution process likely benefit from different growth/prune regimes.
+
+—
+
+We randomly set the initial value of `avg_num_grow_mutations` to a value between 0.5 and 1.0 (uniform sampling), and `avg_num_prune_mutations` to a value between 0.1 and 1.0.
+
+
+
+
+###### `num_network_passes_per_input`
+
+The `num_network_passes_per_input` value controls how many “forward” passes the network operates for every new series of input values. When it is greater than one, the given series of input values is simply fed again.
+
+We create this parameter in order to give networks the flexibility to control how much processing time a given series of input values is given before moving on to a new one.
+
+We believe this to be valuable for two main reasons:
+
+1) If the network grows large, given that our networks do not use layers, an increasing number of forward passes will be required in order for a given node to communicate to another given node.
+
+2) We do not want to get in the way of the possibility that certain network configurations could derive value from having more network structure involved for any series of input values. 
+
+—
+
+
+The `local_connectivity_probability` value controls the probability of accepting the current set of nodes considered. When `local_connectivity_probability` is high, nearby nodes will more likely be connected to each other.
+
+We create this parameter in order to give the evolutionary search the flexibility to have some control over whether to push for local or global connectivity. We choose to make this a global per-network parameter rather than a per-node parameter in order not to explode the search dimensionality.
+
+We believe this parameter to be valuable 
+
+the type of connectivity 
+
+This is a float that is >= 0.
+It is randomly set for each network to a value between 0.5 and 1.0 (uniform sampling).
+
+
+, with a default value of, float, x >= 0, default
+- `avg_num_prune_mutations`, float, x >= 0
+- `num_network_passes_per_input`, int, x >= 1
+- `local_connectivity_probability` float, x >= 0, x <= 1
+
+
+
+
 ##### Mutations
+
+During the mutation stage, three 
 
 ###### Grow node
 
@@ -450,14 +518,30 @@ There are `m` `output` nodes, corresponding to the `m` real values that the netw
 
 ###### Perturb parameters
 
+####### `avg_num_grow_mutations`
+
+rand_val: float = 1.0 + 0.01 * torch.randn(1).item()
+self.avg_num_grow_mutations *= rand_val
+
+—
 
 
 
+
+####### `avg_num_prune_mutations`
+
+####### `num_network_passes_per_input`
+
+####### `local_connectivity_probability`
 
 XXX
 
 Because
 We believe many of the 
+
+###### mutate()
+
+
 
 
 ##### Nodes
@@ -517,6 +601,9 @@ d
 
 We now detail how we plan to bring evolutionary search and the modern paradigm together.
 
+Grafting network evolution on top of fully functional gradient-based models
+
+
 
 
 ## Data setup
@@ -545,4 +632,6 @@ Full subject behaviour
 
 We now detail a sequential order of experimentation and their purposes.
 
-1. Validate 
+We propose to first attempt our most complex experiment using our full list of methods and most advanced dataset, and only if it fails do we start to remove some of the complexity. 
+
+Our most complex experiment is that of 
