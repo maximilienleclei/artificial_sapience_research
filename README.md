@@ -157,9 +157,9 @@ We begin by introducing our methods that pertain to evolutionary search.
 In `#### Core design`, we detail design decisions that pertain to the core of the evolutionary search.
 
 In the later sub-sections we detail more specific mechanisms with the following purposes:
+- `#### Neural networks`: flexible representation construction
 - `#### Generational inheritance`: increasing evaluation efficiency
 - `#### Adversarial imitation optimization`: open-ended human behaviour imitation
-- `#### Neural networks`: flexible representation construction
 
 
 #### Core design
@@ -271,79 +271,6 @@ This mark remains applied for either per-island selection and population-wide se
 First of all we choose to implement some form of elitism, over no form of elitism, in order to provide some shielding against XXX.
 
 However we decide not to implement a heavier form of elitism so as to not considerably slow-down the search: the representations that we are looking for are very complex and are likely very deep in the search space.
-
-#### Generational inheritance
-
-Generational inheritance is meant to make evolutionary search more efficient with respect to evaluation.
-
-It does so by having agents run on portions of a task instead of full tasks. For our purposes, it means having individual agents operate on sub-sections of human behaviour
-
-
-Agents that are selected transfer to their two offspring not only their genotype, but also their final environment state, final memory state, and cumulative lineage fitness scores.
-
-During its own evaluation stage, the offspring thus loads and resumes from its parent’s memory state and environment state. Its fitness score becomes the sum of its lineage fitness score plus its own individual fitness score. The selection stage then accounts for the sum of the lineage and individual fitness scores.
-
-Agents are evaluated for `num_states` states. If the virtual environment terminates before `num_states` take place, we reset the environment and memory (but not the fitness score) and run for the remaining states.
-
-—
-
-This mechanism has an important impact on the selection process, as described in the previous sub-section. Children whose lineage was relatively more competent have more room to explore mutations that do not yield immediate returns.
-
-We see value in this property for the same reasons that occur in the natural world.
-
-#### Adversarial imitation optimization
-
-In its most basic form, adversarial imitation optimization is a method where a generator produces some artifact and a discriminator attempts to dissociate generated and real artefacts.
-
-The generator is optimized to produce artefacts that fool the discriminator while the discriminator is optimized to better dissociate.
-
-—
-
-Our central course of action in the pursuit of higher fidelity behaviour imitation is the use of a form of population-based adversarial imitation optimization, wherein every agent in our population both generates behaviour and discriminates the behaviour of all other agents on its island.
-
-##### Why adversarial imitation?
-
-We choose to operate adversarial imitation over other forms of supervised/unsupervised imitation for the following reasons.
-
-###### Open-ended optimization trajectory
-
-Most non-adversarial imitation methods optimize against a relatively fixed objective. Even when expressive models are used, representation formation is ultimately constrained by a static loss function defined over a fixed target distribution.
-
-Adversarial imitation differs in that the optimization target is itself adaptive.
-
-The generator continuously optimizes to produce behaviour that cannot be distinguished from real behaviour, while the discriminator continuously optimizes to better dissociate generated and real behavioural artefacts. As each side improves, the effective optimization landscape changes.
-
-This produces a fundamentally more open-ended optimization process.
-
-Rather than following a single relatively static optimization path, adversarial imitation continuously creates new generative and discriminative pressures, allowing new behavioural and representational strategies to emerge throughout optimization.
-
-In the population-based setting, this effect compounds further.
-
-Every agent both generates behaviour and discriminates the behaviour of all other agents on its island, creating a heterogeneous and continually shifting ecology of selective pressures. Multiple behavioural equilibria, discriminative strategies, and representational niches may therefore coexist and compete simultaneously, preventing optimization from collapsing toward a singular behavioural solution.
-
-###### Sidestepping the constraints of gradient-based adversarial optimization
-
-Adversarial optimization in gradient-based optimization is commonly associated with two major drawbacks: a) training instability & b) fixed inference budget.
-
-Both drawbacks do not pertain to our conditions: 1) training instability arises from generator–discriminator gradient dynamics which are not pertinent to evolutionary search & 2) our methods have an inherently dynamic inference budget (see `###### num_node_passes_per_input`).
-
-##### Core design
-
-
-
-##### Operationalization of generational inheritance
-
-Generational inheritance is straight-forward to implement for the generator role: a given generator begins an episode/task, runs for `num_states`, and if selected, has its children resume from where it left off.
-
-Without the use of islands, generational inheritance is however not straightforward to use for the discriminator role. The reason is that we are faced with a trade-off where if we want discriminator agents to be able to consistently transfer to their offspring, we need to 
-- 
--
-For the discriminator role, 
-
-
-
-
-However it is not so straightforward for the discriminator role, given that an agent’s chile will most likely not encounter the same generator 
 
 
 #### Neural networks
@@ -498,6 +425,91 @@ We now detail how agents are given the opportunity to alter their own connectivi
 
 
 ##### Indirect recombination
+
+#### Generational inheritance
+
+Generational inheritance is meant to make evolutionary search more efficient with respect to evaluation.
+
+It does so by having agents run on portions of a task instead of full tasks. For our purposes, it means having individual agents operate on sub-sections of human behaviour
+
+
+Agents that are selected transfer to their two offspring not only their genotype, but also their final environment state, final memory state, and cumulative lineage fitness scores.
+
+During its own evaluation stage, the offspring thus loads and resumes from its parent’s memory state and environment state. Its fitness score becomes the sum of its lineage fitness score plus its own individual fitness score. The selection stage then accounts for the sum of the lineage and individual fitness scores.
+
+Agents are evaluated for `num_states` states. If the virtual environment terminates before `num_states` take place, we reset the environment and memory (but not the fitness score) and run for the remaining states.
+
+—
+
+This mechanism also has an important impact on the selection process, as described in the previous sub-section. Children whose lineage was relatively more competent have more room to explore mutations that do not yield immediate returns.
+
+We see value in this property for the same reasons that occur in the natural world.
+
+#### Adversarial imitation optimization
+
+In its most basic form, adversarial imitation optimization is a method where a generator produces some artifact and a discriminator attempts to dissociate generated and real artefacts.
+
+The generator is optimized to produce artefacts that fool the discriminator, while the discriminator is optimized to better dissociate.
+
+##### Why adversarial imitation?
+
+We choose to operate adversarial imitation over other forms of supervised/unsupervised imitation for the following reasons.
+
+###### Open-ended optimization trajectory
+
+Most non-adversarial imitation methods optimize against a relatively fixed objective. Even when expressive models are used, representation formation is ultimately constrained by a static loss function defined over a fixed target distribution.
+
+Adversarial imitation differs in that the optimization target is itself adaptive.
+
+The generator continuously optimizes to produce behaviour that cannot be distinguished from real behaviour, while the discriminator continuously optimizes to better dissociate generated and real behavioural artefacts. As each side improves, the effective optimization landscape changes.
+
+This produces a fundamentally more open-ended optimization process.
+
+Rather than following a single relatively static optimization path, adversarial imitation continuously creates new generative and discriminative pressures, allowing new behavioural and representational strategies to emerge throughout optimization.
+
+In the population-based setting, this effect compounds further.
+
+Every agent both generates behaviour and discriminates the behaviour of all other agents on its island, creating a heterogeneous and continually shifting ecology of selective pressures. Multiple behavioural equilibria, discriminative strategies, and representational niches may therefore coexist and compete simultaneously, preventing optimization from collapsing toward a singular behavioural solution.
+
+###### Sidestepping the constraints of gradient-based adversarial optimization
+
+Adversarial optimization in gradient-based optimization is commonly associated with two major drawbacks: a) training instability & b) fixed inference budget.
+
+Both drawbacks do not pertain to our conditions: 1) training instability arises from generator–discriminator gradient dynamics which are not pertinent to evolutionary search & 2) our methods have an inherently dynamic inference budget (see `###### num_node_passes_per_input`).
+
+##### Core design
+
+We have one population.
+
+Every agent in the population is both a generator and a discriminator.
+
+During the evaluation stage, the following occurs:
+1) Every agent generates behaviour
+2) Every agent discriminates the behaviour of
+    a) the behaviour of the `island_size` agents on its island (including its own behaviour)
+    b) the behaviour of `island_size` human subjects (we do so to make sure the discriminator does not successfully build representations that leverage a distribution imbalance)
+
+
+###### Network architecture ramification
+
+
+Our central course of action in the pursuit of higher fidelity behaviour imitation is the use of a form of population-based adversarial imitation optimization, wherein every agent in our population both generates behaviour and discriminates the behaviour of all other agents on its island.
+
+##### Operationalization of generational inheritance
+
+Generational inheritance is straight-forward to implement for the generator role: a given generator begins an episode/task, runs for `num_states`, and if selected, has its children resume from where it left off.
+
+Without the use of islands, generational inheritance is however not straightforward to use for the discriminator role. The reason is that we are faced with a trade-off where if we want discriminator agents to be able to consistently transfer to their offspring, we need to 
+- 
+-
+For the discriminator role, 
+
+
+
+
+However it is not so straightforward for the discriminator role, given that an agent’s chile will most likely not encounter the same generator 
+
+
 
 
 ### Leveraging the gradient-based paradigm
